@@ -309,7 +309,7 @@ function PricingMapping({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {unit.products.map((p: any) => (
+            {unit.products.map((p) => (
               <tr key={p.name} className="hover:bg-slate-50/50">
                 <td className="px-6 py-3 font-medium text-slate-900">{p.name}</td>
                 <td className="px-6 py-3 text-slate-600">{p.model}</td>
