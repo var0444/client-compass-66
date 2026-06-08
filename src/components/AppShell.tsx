@@ -12,8 +12,9 @@ export function AppShell({ breadcrumbs, children }: AppShellProps) {
       <nav className="sticky top-0 z-10 border-b border-slate-200 bg-surface-card px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/" className="text-lg font-bold tracking-tight text-brand-primary">
-              CLIENT<span className="text-slate-400">360</span>
+            <Link to="/" className="flex items-center gap-2 text-lg font-bold tracking-tight">
+              <span className="inline-block size-2.5 rounded-full bg-brand-primary" />
+              <span className="text-brand-secondary">Client</span><span className="text-slate-400 font-semibold">360</span>
             </Link>
             <div className="h-6 w-px bg-slate-200" />
             <div className="flex items-center gap-2 text-sm font-medium text-slate-500">

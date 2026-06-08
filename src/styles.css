@@ -21,10 +21,12 @@
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-  --color-brand-primary: #2563eb;
-  --color-brand-primary-hover: #1d4ed8;
-  --color-brand-secondary: #64748b;
-  --color-surface-base: #f8fafc;
+  --color-brand-primary: #FF612B;
+  --color-brand-primary-hover: #E04B17;
+  --color-brand-secondary: #002677;
+  --color-brand-secondary-hover: #001A52;
+  --color-brand-accent: #00B0E6;
+  --color-surface-base: #F4F6FA;
   --color-surface-card: #ffffff;
 }
 
