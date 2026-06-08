@@ -5,6 +5,7 @@ import {
   contractsByClient,
   getClient,
   operationalUnitsByClient,
+  type OperationalUnit,
 } from "@/lib/clients-data";
 
 export const Route = createFileRoute("/clients/$clientId")({
