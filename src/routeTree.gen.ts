@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ClientsClientIdRouteImport } from './routes/clients.$clientId'
+import { Route as ClientsClientIdContractsRouteImport } from './routes/clients.$clientId.contracts'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
+  id: '/clients/$clientId',
+  path: '/clients/$clientId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientsClientIdContractsRoute =
+  ClientsClientIdContractsRouteImport.update({
+    id: '/contracts',
+    path: '/contracts',
+    getParentRoute: () => ClientsClientIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
+  '/clients/$clientId/contracts': typeof ClientsClientIdContractsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
+  '/clients/$clientId/contracts': typeof ClientsClientIdContractsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
+  '/clients/$clientId/contracts': typeof ClientsClientIdContractsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/clients/$clientId' | '/clients/$clientId/contracts'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/clients/$clientId' | '/clients/$clientId/contracts'
+  id: '__root__' | '/' | '/clients/$clientId' | '/clients/$clientId/contracts'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ClientsClientIdRoute: typeof ClientsClientIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +68,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/clients/$clientId': {
+      id: '/clients/$clientId'
+      path: '/clients/$clientId'
+      fullPath: '/clients/$clientId'
+      preLoaderRoute: typeof ClientsClientIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clients/$clientId/contracts': {
+      id: '/clients/$clientId/contracts'
+      path: '/contracts'
+      fullPath: '/clients/$clientId/contracts'
+      preLoaderRoute: typeof ClientsClientIdContractsRouteImport
+      parentRoute: typeof ClientsClientIdRoute
+    }
   }
 }
 
+interface ClientsClientIdRouteChildren {
+  ClientsClientIdContractsRoute: typeof ClientsClientIdContractsRoute
+}
+
+const ClientsClientIdRouteChildren: ClientsClientIdRouteChildren = {
+  ClientsClientIdContractsRoute: ClientsClientIdContractsRoute,
+}
+
+const ClientsClientIdRouteWithChildren = ClientsClientIdRoute._addFileChildren(
+  ClientsClientIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ClientsClientIdRoute: ClientsClientIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
