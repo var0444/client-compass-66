@@ -265,11 +265,11 @@ function PricingMapping({
   selected,
   onSelect,
 }: {
-  units: ReturnType<typeof Object.values<any>> extends any ? any : never;
+  units: OperationalUnit[];
   selected?: string;
   onSelect: (id: string) => void;
 }) {
-  const list = units as { id: string; name: string; products: any[] }[];
+  const list = units;
   const unit = list.find((u) => u.id === selected) ?? list[0];
   if (!unit)
     return <EmptyPanel title="No operational units" desc="Add an operational unit to start mapping products and pricing." />;
