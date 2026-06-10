@@ -10,6 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MasterProductsRouteImport } from './routes/master.products'
+import { Route as MasterPricingRouteImport } from './routes/master.pricing'
+import { Route as MasterCarriersRouteImport } from './routes/master.carriers'
 import { Route as ClientsClientIdRouteImport } from './routes/clients.$clientId'
 import { Route as ClientsClientIdIndexRouteImport } from './routes/clients.$clientId.index'
 import { Route as ClientsClientIdConfigurationRouteImport } from './routes/clients.$clientId.configuration'
@@ -17,6 +20,21 @@ import { Route as ClientsClientIdConfigurationRouteImport } from './routes/clien
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterProductsRoute = MasterProductsRouteImport.update({
+  id: '/master/products',
+  path: '/master/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterPricingRoute = MasterPricingRouteImport.update({
+  id: '/master/pricing',
+  path: '/master/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterCarriersRoute = MasterCarriersRouteImport.update({
+  id: '/master/carriers',
+  path: '/master/carriers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
@@ -39,11 +57,17 @@ const ClientsClientIdConfigurationRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
+  '/master/carriers': typeof MasterCarriersRoute
+  '/master/pricing': typeof MasterPricingRoute
+  '/master/products': typeof MasterProductsRoute
   '/clients/$clientId/configuration': typeof ClientsClientIdConfigurationRoute
   '/clients/$clientId/': typeof ClientsClientIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/master/carriers': typeof MasterCarriersRoute
+  '/master/pricing': typeof MasterPricingRoute
+  '/master/products': typeof MasterProductsRoute
   '/clients/$clientId/configuration': typeof ClientsClientIdConfigurationRoute
   '/clients/$clientId': typeof ClientsClientIdIndexRoute
 }
@@ -51,6 +75,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
+  '/master/carriers': typeof MasterCarriersRoute
+  '/master/pricing': typeof MasterPricingRoute
+  '/master/products': typeof MasterProductsRoute
   '/clients/$clientId/configuration': typeof ClientsClientIdConfigurationRoute
   '/clients/$clientId/': typeof ClientsClientIdIndexRoute
 }
@@ -59,14 +86,26 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/clients/$clientId'
+    | '/master/carriers'
+    | '/master/pricing'
+    | '/master/products'
     | '/clients/$clientId/configuration'
     | '/clients/$clientId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clients/$clientId/configuration' | '/clients/$clientId'
+  to:
+    | '/'
+    | '/master/carriers'
+    | '/master/pricing'
+    | '/master/products'
+    | '/clients/$clientId/configuration'
+    | '/clients/$clientId'
   id:
     | '__root__'
     | '/'
     | '/clients/$clientId'
+    | '/master/carriers'
+    | '/master/pricing'
+    | '/master/products'
     | '/clients/$clientId/configuration'
     | '/clients/$clientId/'
   fileRoutesById: FileRoutesById
@@ -74,6 +113,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClientsClientIdRoute: typeof ClientsClientIdRouteWithChildren
+  MasterCarriersRoute: typeof MasterCarriersRoute
+  MasterPricingRoute: typeof MasterPricingRoute
+  MasterProductsRoute: typeof MasterProductsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -83,6 +125,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master/products': {
+      id: '/master/products'
+      path: '/master/products'
+      fullPath: '/master/products'
+      preLoaderRoute: typeof MasterProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master/pricing': {
+      id: '/master/pricing'
+      path: '/master/pricing'
+      fullPath: '/master/pricing'
+      preLoaderRoute: typeof MasterPricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master/carriers': {
+      id: '/master/carriers'
+      path: '/master/carriers'
+      fullPath: '/master/carriers'
+      preLoaderRoute: typeof MasterCarriersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/clients/$clientId': {
@@ -126,6 +189,9 @@ const ClientsClientIdRouteWithChildren = ClientsClientIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClientsClientIdRoute: ClientsClientIdRouteWithChildren,
+  MasterCarriersRoute: MasterCarriersRoute,
+  MasterPricingRoute: MasterPricingRoute,
+  MasterProductsRoute: MasterProductsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
