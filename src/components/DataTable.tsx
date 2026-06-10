@@ -46,7 +46,7 @@ export function DataTable<T extends { id?: string }>({
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, globalFilter, columnFilters, pagination: { pageIndex: 0, pageSize } },
+    state: { sorting, globalFilter, columnFilters },
     initialState: { pagination: { pageIndex: 0, pageSize } },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
