@@ -10,12 +10,31 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MasterProductsRouteImport } from './routes/master.products'
+import { Route as MasterPricingRouteImport } from './routes/master.pricing'
+import { Route as MasterCarriersRouteImport } from './routes/master.carriers'
 import { Route as ClientsClientIdRouteImport } from './routes/clients.$clientId'
-import { Route as ClientsClientIdContractsRouteImport } from './routes/clients.$clientId.contracts'
+import { Route as ClientsClientIdIndexRouteImport } from './routes/clients.$clientId.index'
+import { Route as ClientsClientIdConfigurationRouteImport } from './routes/clients.$clientId.configuration'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterProductsRoute = MasterProductsRouteImport.update({
+  id: '/master/products',
+  path: '/master/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterPricingRoute = MasterPricingRouteImport.update({
+  id: '/master/pricing',
+  path: '/master/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterCarriersRoute = MasterCarriersRouteImport.update({
+  id: '/master/carriers',
+  path: '/master/carriers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
@@ -23,40 +42,80 @@ const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
   path: '/clients/$clientId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ClientsClientIdContractsRoute =
-  ClientsClientIdContractsRouteImport.update({
-    id: '/contracts',
-    path: '/contracts',
+const ClientsClientIdIndexRoute = ClientsClientIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ClientsClientIdRoute,
+} as any)
+const ClientsClientIdConfigurationRoute =
+  ClientsClientIdConfigurationRouteImport.update({
+    id: '/configuration',
+    path: '/configuration',
     getParentRoute: () => ClientsClientIdRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
-  '/clients/$clientId/contracts': typeof ClientsClientIdContractsRoute
+  '/master/carriers': typeof MasterCarriersRoute
+  '/master/pricing': typeof MasterPricingRoute
+  '/master/products': typeof MasterProductsRoute
+  '/clients/$clientId/configuration': typeof ClientsClientIdConfigurationRoute
+  '/clients/$clientId/': typeof ClientsClientIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
-  '/clients/$clientId/contracts': typeof ClientsClientIdContractsRoute
+  '/master/carriers': typeof MasterCarriersRoute
+  '/master/pricing': typeof MasterPricingRoute
+  '/master/products': typeof MasterProductsRoute
+  '/clients/$clientId/configuration': typeof ClientsClientIdConfigurationRoute
+  '/clients/$clientId': typeof ClientsClientIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
-  '/clients/$clientId/contracts': typeof ClientsClientIdContractsRoute
+  '/master/carriers': typeof MasterCarriersRoute
+  '/master/pricing': typeof MasterPricingRoute
+  '/master/products': typeof MasterProductsRoute
+  '/clients/$clientId/configuration': typeof ClientsClientIdConfigurationRoute
+  '/clients/$clientId/': typeof ClientsClientIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clients/$clientId' | '/clients/$clientId/contracts'
+  fullPaths:
+    | '/'
+    | '/clients/$clientId'
+    | '/master/carriers'
+    | '/master/pricing'
+    | '/master/products'
+    | '/clients/$clientId/configuration'
+    | '/clients/$clientId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clients/$clientId' | '/clients/$clientId/contracts'
-  id: '__root__' | '/' | '/clients/$clientId' | '/clients/$clientId/contracts'
+  to:
+    | '/'
+    | '/master/carriers'
+    | '/master/pricing'
+    | '/master/products'
+    | '/clients/$clientId/configuration'
+    | '/clients/$clientId'
+  id:
+    | '__root__'
+    | '/'
+    | '/clients/$clientId'
+    | '/master/carriers'
+    | '/master/pricing'
+    | '/master/products'
+    | '/clients/$clientId/configuration'
+    | '/clients/$clientId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClientsClientIdRoute: typeof ClientsClientIdRouteWithChildren
+  MasterCarriersRoute: typeof MasterCarriersRoute
+  MasterPricingRoute: typeof MasterPricingRoute
+  MasterProductsRoute: typeof MasterProductsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -68,6 +127,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/master/products': {
+      id: '/master/products'
+      path: '/master/products'
+      fullPath: '/master/products'
+      preLoaderRoute: typeof MasterProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master/pricing': {
+      id: '/master/pricing'
+      path: '/master/pricing'
+      fullPath: '/master/pricing'
+      preLoaderRoute: typeof MasterPricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master/carriers': {
+      id: '/master/carriers'
+      path: '/master/carriers'
+      fullPath: '/master/carriers'
+      preLoaderRoute: typeof MasterCarriersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clients/$clientId': {
       id: '/clients/$clientId'
       path: '/clients/$clientId'
@@ -75,22 +155,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientsClientIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/clients/$clientId/contracts': {
-      id: '/clients/$clientId/contracts'
-      path: '/contracts'
-      fullPath: '/clients/$clientId/contracts'
-      preLoaderRoute: typeof ClientsClientIdContractsRouteImport
+    '/clients/$clientId/': {
+      id: '/clients/$clientId/'
+      path: '/'
+      fullPath: '/clients/$clientId/'
+      preLoaderRoute: typeof ClientsClientIdIndexRouteImport
+      parentRoute: typeof ClientsClientIdRoute
+    }
+    '/clients/$clientId/configuration': {
+      id: '/clients/$clientId/configuration'
+      path: '/configuration'
+      fullPath: '/clients/$clientId/configuration'
+      preLoaderRoute: typeof ClientsClientIdConfigurationRouteImport
       parentRoute: typeof ClientsClientIdRoute
     }
   }
 }
 
 interface ClientsClientIdRouteChildren {
-  ClientsClientIdContractsRoute: typeof ClientsClientIdContractsRoute
+  ClientsClientIdConfigurationRoute: typeof ClientsClientIdConfigurationRoute
+  ClientsClientIdIndexRoute: typeof ClientsClientIdIndexRoute
 }
 
 const ClientsClientIdRouteChildren: ClientsClientIdRouteChildren = {
-  ClientsClientIdContractsRoute: ClientsClientIdContractsRoute,
+  ClientsClientIdConfigurationRoute: ClientsClientIdConfigurationRoute,
+  ClientsClientIdIndexRoute: ClientsClientIdIndexRoute,
 }
 
 const ClientsClientIdRouteWithChildren = ClientsClientIdRoute._addFileChildren(
@@ -100,6 +189,9 @@ const ClientsClientIdRouteWithChildren = ClientsClientIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClientsClientIdRoute: ClientsClientIdRouteWithChildren,
+  MasterCarriersRoute: MasterCarriersRoute,
+  MasterPricingRoute: MasterPricingRoute,
+  MasterProductsRoute: MasterProductsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
