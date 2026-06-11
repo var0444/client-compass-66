@@ -117,9 +117,15 @@ function CarriersPage() {
           </div>
         )}
       />
+      <AddEntityDialog
+        open={openAdd} onOpenChange={setOpenAdd}
+        title="Add Carrier" description="Configure a new carrier with claim, billing, and migration behavior."
+        fields={fields} submitLabel="Create Carrier"
+      />
     </AppShell>
   );
 }
+
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
