@@ -77,7 +77,7 @@ function CarriersPage() {
       breadcrumbs={[{ label: "Master Management" }, { label: "Carriers" }]}
       title="Carrier Management"
       subtitle="Configure claim, billing and migration behavior per carrier."
-      actions={<Button className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ Add Carrier</Button>}
+      actions={<Button onClick={() => setOpenAdd(true)} className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ Add Carrier</Button>}
     >
       <DataTable
         data={carriers}
