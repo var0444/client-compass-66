@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Settings2 } from "lucide-react";
+import { ClipboardList, Settings2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { StatusChip } from "@/components/StatusChip";
 import { getClient } from "@/lib/clients-data";
@@ -13,12 +13,12 @@ export const Route = createFileRoute("/clients/$clientId")({
   },
   component: ClientLayout,
   notFoundComponent: () => (
-    <AppShell breadcrumbs={[{ label: "Clients", to: "/" }, { label: "Unknown" }]} title="Client not found">
-      <Link to="/" className="text-sm font-medium text-brand-primary">Back to Clients</Link>
+    <AppShell breadcrumbs={[{ label: "Clients", to: "/clients" }, { label: "Unknown" }]} title="Client not found">
+      <Link to="/clients" className="text-sm font-medium text-brand-primary">Back to Clients</Link>
     </AppShell>
   ),
   errorComponent: ({ error }) => (
-    <AppShell breadcrumbs={[{ label: "Clients", to: "/" }, { label: "Error" }]} title="Something went wrong">
+    <AppShell breadcrumbs={[{ label: "Clients", to: "/clients" }, { label: "Error" }]} title="Something went wrong">
       <p className="text-sm text-rose-600">{error.message}</p>
     </AppShell>
   ),
@@ -35,9 +35,9 @@ function ClientLayout() {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Clients", to: "/" },
+        { label: "Clients", to: "/clients" },
         { label: client.name },
-        { label: isConfig ? "Configuration" : "Dashboard" },
+        { label: isConfig ? "Configuration" : "Summary" },
       ]}
       title={client.name}
       subtitle={`${client.client360Id} · ${client.city}, ${client.state} · Owner ${client.owner}`}
@@ -51,7 +51,7 @@ function ClientLayout() {
       }
     >
       <div className="mb-5 flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 text-sm shadow-sm w-fit">
-        <SubTab to="/clients/$clientId" active={!isConfig} icon={<LayoutDashboard className="size-4" />}>Dashboard</SubTab>
+        <SubTab to="/clients/$clientId" active={!isConfig} icon={<ClipboardList className="size-4" />}>Client Summary</SubTab>
         <SubTab to="/clients/$clientId/configuration" active={isConfig} icon={<Settings2 className="size-4" />}>Configuration</SubTab>
       </div>
       <Outlet />
