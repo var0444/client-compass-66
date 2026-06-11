@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Settings2 } from "lucide-react";
+import { ClipboardList, Settings2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { StatusChip } from "@/components/StatusChip";
 import { getClient } from "@/lib/clients-data";
