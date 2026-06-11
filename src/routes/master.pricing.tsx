@@ -60,7 +60,7 @@ function PricingPage() {
       breadcrumbs={[{ label: "Master Management" }, { label: "Pricing" }]}
       title="Pricing Management"
       subtitle="Maintain pricing models that contracts and operational units inherit or override."
-      actions={<Button className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ Add Pricing Model</Button>}
+      actions={<Button onClick={() => setOpenAdd(true)} className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ Add Pricing Model</Button>}
     >
       <DataTable
         data={pricingModels}
@@ -82,6 +82,11 @@ function PricingPage() {
             </div>
           </div>
         )}
+      />
+      <AddEntityDialog
+        open={openAdd} onOpenChange={setOpenAdd}
+        title="Add Pricing Model" description="Define a new pricing model that contracts or OUs can inherit."
+        fields={fields} submitLabel="Create Pricing Model"
       />
     </AppShell>
   );
