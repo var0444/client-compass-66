@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -10,6 +10,10 @@ import {
   Search,
   Bell,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Gauge,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,10 +21,13 @@ interface NavItem {
   to: string;
   label: string;
   icon: typeof LayoutDashboard;
+  match?: (pathname: string) => boolean;
 }
 
 const primary: NavItem[] = [
-  { to: "/", label: "Clients", icon: Users },
+  { to: "/", label: "Command Center", icon: Activity, match: (p) => p === "/" },
+  { to: "/dashboard", label: "Dashboard", icon: Gauge, match: (p) => p.startsWith("/dashboard") },
+  { to: "/clients", label: "Clients", icon: Users, match: (p) => p === "/clients" || p.startsWith("/clients/") },
 ];
 
 const master: NavItem[] = [
@@ -37,42 +44,77 @@ interface ShellProps {
   children: ReactNode;
 }
 
+function useCollapsed() {
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem("nav-collapsed");
+      if (v === "1") setCollapsed(true);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem("nav-collapsed", collapsed ? "1" : "0"); } catch {}
+  }, [collapsed]);
+  return [collapsed, setCollapsed] as const;
+}
+
 export function AppShell({ breadcrumbs, title, subtitle, actions, children }: ShellProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [collapsed, setCollapsed] = useCollapsed();
 
   return (
     <div className="flex min-h-screen bg-surface-base font-sans text-slate-900">
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
-        <div className="flex h-14 items-center gap-2 border-b border-slate-100 px-5">
-          <span className="grid size-7 place-items-center rounded-md bg-brand-secondary text-white">
+      <aside
+        className={cn(
+          "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-slate-200 bg-white transition-[width] duration-200 lg:flex",
+          collapsed ? "w-16" : "w-60",
+        )}
+      >
+        <div className={cn("flex h-14 items-center gap-2 border-b border-slate-100", collapsed ? "justify-center px-2" : "px-5")}>
+          <span className="grid size-7 shrink-0 place-items-center rounded-md bg-brand-secondary text-white">
             <LayoutDashboard className="size-4" />
           </span>
-          <div className="leading-tight">
-            <div className="text-sm font-bold text-brand-secondary">Client360</div>
-            <div className="text-[10px] font-medium uppercase tracking-wider text-slate-400">Operations Suite</div>
-          </div>
+          {!collapsed && (
+            <div className="leading-tight">
+              <div className="text-sm font-bold text-brand-secondary">Client360</div>
+              <div className="text-[10px] font-medium uppercase tracking-wider text-slate-400">Operations Suite</div>
+            </div>
+          )}
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4 text-sm">
-          <SectionLabel>Workspace</SectionLabel>
+        <nav className={cn("flex-1 overflow-y-auto py-4 text-sm", collapsed ? "px-2" : "px-3")}>
+          {!collapsed && <SectionLabel>Workspace</SectionLabel>}
           <ul className="space-y-0.5">
             {primary.map((item) => (
-              <NavLink key={item.to} item={item} active={pathname === "/" || pathname.startsWith("/clients")} />
+              <NavLink key={item.to} item={item} active={item.match ? item.match(pathname) : pathname.startsWith(item.to)} collapsed={collapsed} />
             ))}
           </ul>
 
-          <SectionLabel className="mt-6">Master Management</SectionLabel>
+          {!collapsed && <SectionLabel className="mt-6">Master Management</SectionLabel>}
+          {collapsed && <div className="my-3 border-t border-slate-100" />}
           <ul className="space-y-0.5">
             {master.map((item) => (
-              <NavLink key={item.to} item={item} active={pathname.startsWith(item.to)} />
+              <NavLink key={item.to} item={item} active={pathname.startsWith(item.to)} collapsed={collapsed} />
             ))}
           </ul>
         </nav>
 
-        <div className="border-t border-slate-100 p-3">
-          <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-            <Settings className="size-4" /> Settings
+        <div className="border-t border-slate-100 p-2">
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={cn(
+              "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-500 hover:bg-slate-50",
+              collapsed && "justify-center px-0",
+            )}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronsRight className="size-4" /> : <><ChevronsLeft className="size-4" /> Collapse</>}
           </button>
+          {!collapsed && (
+            <button className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+              <Settings className="size-4" /> Settings
+            </button>
+          )}
         </div>
       </aside>
 
@@ -130,21 +172,23 @@ function SectionLabel({ children, className }: { children: ReactNode; className?
   );
 }
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({ item, active, collapsed }: { item: NavItem; active: boolean; collapsed: boolean }) {
   const Icon = item.icon;
   return (
     <li>
       <Link
         to={item.to}
+        title={collapsed ? item.label : undefined}
         className={cn(
-          "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+          "flex items-center gap-2.5 rounded-lg text-sm font-medium transition-colors",
+          collapsed ? "justify-center px-2 py-2" : "px-3 py-2",
           active
             ? "bg-brand-secondary/[0.08] text-brand-secondary"
             : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
         )}
       >
-        <Icon className={cn("size-4", active ? "text-brand-primary" : "text-slate-400")} />
-        {item.label}
+        <Icon className={cn("size-4 shrink-0", active ? "text-brand-primary" : "text-slate-400")} />
+        {!collapsed && item.label}
       </Link>
     </li>
   );
