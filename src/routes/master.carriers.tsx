@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { AppShell } from "@/components/AppShell";
 import { DataTable } from "@/components/DataTable";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { AddEntityDialog, type FieldDef } from "@/components/AddEntityDialog";
 import { carriers, type Carrier } from "@/lib/master-data";
 
 export const Route = createFileRoute("/master/carriers")({
@@ -22,6 +23,30 @@ function YN({ v }: { v: boolean }) {
 }
 
 function CarriersPage() {
+  const [openAdd, setOpenAdd] = useState(false);
+  const fields: FieldDef[] = [
+    { type: "text", key: "name", label: "Carrier Name", required: true, placeholder: "FedEx" },
+    { type: "text", key: "id", label: "Carrier ID", placeholder: "CARR-010" },
+    { type: "date", key: "claimBillStartDate", label: "Claim Bill Start Date", required: true },
+    { type: "select", key: "claimPricingType", label: "Pricing Type", options: [
+      { value: "Contract", label: "Contract" }, { value: "Standard", label: "Standard" }, { value: "Custom", label: "Custom" },
+    ]},
+    { type: "select", key: "sourceSystem", label: "Source System", options: [
+      { value: "Legacy-CRM", label: "Legacy-CRM" }, { value: "SAP-Bill", label: "SAP-Bill" }, { value: "Oracle-Fin", label: "Oracle-Fin" }, { value: "Native", label: "Native" },
+    ]},
+    { type: "select", key: "migration", label: "Migration", options: [
+      { value: "Migrated", label: "Migrated" }, { value: "Pending", label: "Pending" }, { value: "N/A", label: "N/A" },
+    ]},
+    { type: "checkbox", key: "claimIndicator", label: "Claim indicator enabled" },
+    { type: "checkbox", key: "internalBilling", label: "Internal billing indicator" },
+    { type: "switch", key: "suppressRejected", label: "Suppress rejected claims", full: true },
+    { type: "switch", key: "suppressNet", label: "Suppress net", full: true },
+    { type: "switch", key: "suppressHistoric", label: "Suppress historic claims", full: true },
+    { type: "multiselect", key: "regions", label: "Service regions", full: true, options: [
+      { value: "us-w", label: "US West" }, { value: "us-c", label: "US Central" }, { value: "us-e", label: "US East" }, { value: "intl", label: "International" },
+    ]},
+  ];
+
   const columns = useMemo(() => [
     helper.accessor("name", {
       header: "Carrier",
