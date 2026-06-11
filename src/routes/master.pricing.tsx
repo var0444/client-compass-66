@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { AppShell } from "@/components/AppShell";
 import { DataTable } from "@/components/DataTable";
@@ -7,6 +7,7 @@ import { StatusChip, statusToTone } from "@/components/StatusChip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { AddEntityDialog, type FieldDef } from "@/components/AddEntityDialog";
 import { pricingModels, type PricingModel } from "@/lib/master-data";
 
 export const Route = createFileRoute("/master/pricing")({
@@ -17,6 +18,25 @@ export const Route = createFileRoute("/master/pricing")({
 const helper = createColumnHelper<PricingModel>();
 
 function PricingPage() {
+  const [openAdd, setOpenAdd] = useState(false);
+  const fields: FieldDef[] = [
+    { type: "text", key: "name", label: "Model Name", required: true, placeholder: "Premium Global Tier" },
+    { type: "text", key: "id", label: "Model ID", placeholder: "PM-2010" },
+    { type: "select", key: "type", label: "Type", options: [
+      { value: "Subscription", label: "Subscription" }, { value: "Per Transaction", label: "Per Transaction" }, { value: "Tiered", label: "Tiered" }, { value: "Per Unit", label: "Per Unit" },
+    ]},
+    { type: "select", key: "basis", label: "Basis", options: [
+      { value: "Monthly Fixed", label: "Monthly Fixed" }, { value: "Volume Brackets", label: "Volume Brackets" }, { value: "Per 1K Calls", label: "Per 1K Calls" }, { value: "Per Label", label: "Per Label" },
+    ]},
+    { type: "text", key: "rate", label: "Rate", placeholder: "$1,200/mo" },
+    { type: "date", key: "effectiveFrom", label: "Effective From", required: true },
+    { type: "select", key: "appliesTo", label: "Applies To", full: true, options: [
+      { value: "enterprise", label: "Enterprise segment" }, { value: "mid", label: "Mid-Market segment" }, { value: "smb", label: "SMB segment" }, { value: "product", label: "Specific product" },
+    ]},
+    { type: "switch", key: "active", label: "Activate immediately", defaultValue: true, full: true },
+    { type: "checkbox", key: "allowOverride", label: "Allow OU-level overrides", full: true },
+  ];
+
   const columns = useMemo(() => [
     helper.accessor("name", {
       header: "Pricing Model",
