@@ -59,7 +59,7 @@ function ProductsPage() {
       breadcrumbs={[{ label: "Master Management" }, { label: "Products" }]}
       title="Product Management"
       subtitle="Manage catalog products available to client contracts and operational units."
-      actions={<Button className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ Add Product</Button>}
+      actions={<Button onClick={() => setOpenAdd(true)} className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ Add Product</Button>}
     >
       <DataTable
         data={products}
@@ -89,6 +89,11 @@ function ProductsPage() {
             </div>
           </div>
         )}
+      />
+      <AddEntityDialog
+        open={openAdd} onOpenChange={setOpenAdd}
+        title="Add Product" description="Add a new product to the master catalog."
+        fields={fields} submitLabel="Create Product"
       />
     </AppShell>
   );
