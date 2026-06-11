@@ -13,7 +13,7 @@ export type FieldDef =
   | { type: "text"; key: string; label: string; placeholder?: string; required?: boolean; full?: boolean; defaultValue?: string }
   | { type: "textarea"; key: string; label: string; placeholder?: string; rows?: number; full?: boolean; defaultValue?: string }
   | { type: "date"; key: string; label: string; required?: boolean; full?: boolean; defaultValue?: string }
-  | { type: "select"; key: string; label: string; options: { value: string; label: string }[]; placeholder?: string; full?: boolean; defaultValue?: string }
+  | { type: "select"; key: string; label: string; options: { value: string; label: string }[]; placeholder?: string; required?: boolean; full?: boolean; defaultValue?: string }
   | { type: "multiselect"; key: string; label: string; options: { value: string; label: string }[]; full?: boolean; defaultValue?: string[] }
   | { type: "checkbox"; key: string; label: string; description?: string; full?: boolean; defaultValue?: boolean }
   | { type: "switch"; key: string; label: string; description?: string; full?: boolean; defaultValue?: boolean };
