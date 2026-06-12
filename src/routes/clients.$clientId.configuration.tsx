@@ -359,13 +359,13 @@ function InlinePricingEditor({ products }: { products: ProductPrice[] }) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200">
       <table className="w-full text-sm">
-        <thead className="bg-slate-50/60 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        <thead className="thead-brand">
           <tr>
-            <th className="px-3 py-2 text-left">Product</th>
-            <th className="px-3 py-2 text-left">Model</th>
-            <th className="px-3 py-2 text-right">Base</th>
-            <th className="px-3 py-2 text-right">Adjusted</th>
-            <th className="px-3 py-2 text-right">Δ</th>
+            <th className="th-brand px-3 py-2 text-left">Product</th>
+            <th className="th-brand px-3 py-2 text-left">Model</th>
+            <th className="th-brand px-3 py-2 text-right">Base</th>
+            <th className="th-brand px-3 py-2 text-right">Adjusted</th>
+            <th className="th-brand px-3 py-2 text-right">Δ</th>
           </tr>
         </thead>
         <tbody>
