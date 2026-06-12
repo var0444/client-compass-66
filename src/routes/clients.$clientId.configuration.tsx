@@ -206,6 +206,7 @@ const uHelper = createColumnHelper<OperationalUnit>();
 
 function UnitsTab({ units, contracts }: { units: OperationalUnit[]; contracts: Contract[] }) {
   const [openAdd, setOpenAdd] = useState(false);
+  const [openCustom, setOpenCustom] = useState(false);
   const columns = useMemo(() => [
     uHelper.accessor("name", {
       header: "Operational Unit",
