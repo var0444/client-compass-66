@@ -22,6 +22,7 @@ interface DataTableProps<T> {
   searchKeys?: (keyof T)[];
   toolbar?: ReactNode;
   renderExpanded?: (row: T) => ReactNode;
+  onRowClick?: (row: T) => void;
   pageSize?: number;
   emptyMessage?: string;
   getRowId?: (row: T) => string;
@@ -34,6 +35,7 @@ export function DataTable<T extends { id?: string }>({
   searchKeys,
   toolbar,
   renderExpanded,
+  onRowClick,
   pageSize = 8,
   emptyMessage = "No records found.",
   getRowId,
