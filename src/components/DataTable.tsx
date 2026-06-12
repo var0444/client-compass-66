@@ -86,9 +86,9 @@ export function DataTable<T extends { id?: string }>({
 
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead>
+          <thead className="thead-brand">
             {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id} className="border-b border-slate-100">
+              <tr key={hg.id}>
                 {renderExpanded && <th className="w-8" />}
                 {hg.headers.map((h) => {
                   const canSort = h.column.getCanSort();
@@ -96,12 +96,12 @@ export function DataTable<T extends { id?: string }>({
                   return (
                     <th
                       key={h.id}
-                      className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500"
+                      className="th-brand px-4 py-2.5 text-left"
                     >
                       {canSort ? (
                         <button
                           onClick={h.column.getToggleSortingHandler()}
-                          className="inline-flex items-center gap-1 hover:text-slate-900"
+                          className="inline-flex items-center gap-1 hover:opacity-80"
                         >
                           {flexRender(h.column.columnDef.header, h.getContext())}
                           {sorted === "asc" ? <ArrowUp className="size-3" /> : sorted === "desc" ? <ArrowDown className="size-3" /> : <ArrowUpDown className="size-3 opacity-40" />}
@@ -126,14 +126,18 @@ export function DataTable<T extends { id?: string }>({
               rows.map((row) => {
                 const id = getRowId?.(row.original) ?? row.original.id ?? row.id;
                 const isOpen = !!expanded[id];
+                const clickable = !!renderExpanded || !!onRowClick;
                 return (
                   <Fragment key={id}>
                     <tr
-                      onClick={() => renderExpanded && setExpanded((p) => ({ ...p, [id]: !p[id] }))}
+                      onClick={() => {
+                        if (renderExpanded) setExpanded((p) => ({ ...p, [id]: !p[id] }));
+                        else if (onRowClick) onRowClick(row.original);
+                      }}
                       className={cn(
                         "border-b border-slate-50 transition-colors",
-                        renderExpanded && "cursor-pointer hover:bg-slate-50/70",
-                        isOpen && "bg-brand-secondary/[0.03]",
+                        clickable && "cursor-pointer hover:bg-brand-secondary/[0.035]",
+                        isOpen && "bg-brand-secondary/[0.04]",
                       )}
                     >
                       {renderExpanded && (
