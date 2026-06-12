@@ -447,15 +447,15 @@ function PricingTab({ units, contracts }: { units: OperationalUnit[]; contracts:
 
         <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50/60 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <thead className="thead-brand">
               <tr>
-                <th className="px-3 py-2 text-left">Product</th>
-                <th className="px-3 py-2 text-left">Model</th>
-                <th className="px-3 py-2 text-right">Contract Base</th>
+                <th className="th-brand px-3 py-2 text-left">Product</th>
+                <th className="th-brand px-3 py-2 text-left">Model</th>
+                <th className="th-brand px-3 py-2 text-right">Contract Base</th>
                 {units.map((u) => (
-                  <th key={u.id} className="px-3 py-2 text-right">
-                    <div className="text-slate-700">{u.name}</div>
-                    <div className="font-mono text-[10px] font-normal text-slate-400">{u.id}</div>
+                  <th key={u.id} className="th-brand px-3 py-2 text-right">
+                    <div>{u.name}</div>
+                    <div className="font-mono text-[10px] font-normal normal-case tracking-normal text-slate-400">{u.id}</div>
                   </th>
                 ))}
               </tr>
