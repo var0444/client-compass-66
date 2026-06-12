@@ -270,11 +270,6 @@ function InvoicesPage() {
                 ),
               },
             ]}
-            actions={
-              <Button size="sm" variant="outline">
-                <FileText className="mr-1.5 size-3.5" /> Download PDF
-              </Button>
-            }
           />
         )}
       />
