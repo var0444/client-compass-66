@@ -156,3 +156,17 @@
     -webkit-font-smoothing: antialiased;
   }
 }
+
+@utility thead-brand {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-brand-secondary) 5%, #fff), #fff);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-brand-secondary) 18%, transparent);
+}
+
+@utility th-brand {
+  color: var(--color-brand-secondary);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
