@@ -1,6 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { TrendingUp, TrendingDown, FileBarChart, BarChart3, Filter, Download, ChevronRight } from "lucide-react";
+import {
+  TrendingUp, TrendingDown, FileBarChart, BarChart3, Filter, Download, ArrowRight,
+  Activity, AlertOctagon, Link2Off, Clock, CheckCircle2, Server,
+} from "lucide-react";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
   Pie, PieChart, Cell, Legend,
@@ -18,41 +21,52 @@ export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · Client360" }] }),
 });
 
-type Tab = "metrics" | "reports";
+type Tab = "hub" | "summary" | "reports";
 
 function DashboardPage() {
-  const [tab, setTab] = useState<Tab>("metrics");
+  const [tab, setTab] = useState<Tab>("summary");
   const [period, setPeriod] = useState("90");
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Dashboard" }]}
+      breadcrumbs={[{ label: "Dashboard" }, { label: tabLabel(tab) }]}
       title="Dashboard"
-      subtitle="Metrics, analytics, and reports across all clients."
+      subtitle="Executive summary, action hub, and reports across all clients."
       actions={
-        <div className="flex items-center gap-2">
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="90">Last 90 days</SelectItem>
-              <SelectItem value="365">Last 12 months</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm"><Download className="mr-1.5 size-3.5" /> Export</Button>
-        </div>
+        tab === "summary" ? (
+          <div className="flex items-center gap-2">
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30">Last 30 days</SelectItem>
+                <SelectItem value="90">Last 90 days</SelectItem>
+                <SelectItem value="365">Last 12 months</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm"><Download className="mr-1.5 size-3.5" /> Export</Button>
+          </div>
+        ) : tab === "hub" ? (
+          <StatusChip tone="success">All systems nominal</StatusChip>
+        ) : null
       }
     >
       <div className="space-y-5">
         <div className="flex items-center gap-1 border-b border-slate-200">
-          <TabBtn active={tab === "metrics"} onClick={() => setTab("metrics")} icon={<BarChart3 className="size-4" />}>Metrics & Analytics</TabBtn>
+          <TabBtn active={tab === "hub"} onClick={() => setTab("hub")} icon={<Activity className="size-4" />}>Core Action Hub</TabBtn>
+          <TabBtn active={tab === "summary"} onClick={() => setTab("summary")} icon={<BarChart3 className="size-4" />}>Executive Summary</TabBtn>
           <TabBtn active={tab === "reports"} onClick={() => setTab("reports")} icon={<FileBarChart className="size-4" />}>Reports</TabBtn>
         </div>
 
-        {tab === "metrics" ? <MetricsView /> : <ReportsView />}
+        {tab === "hub" && <CoreActionHub />}
+        {tab === "summary" && <ExecutiveSummary />}
+        {tab === "reports" && <ReportsView />}
       </div>
     </AppShell>
   );
+}
+
+function tabLabel(t: Tab) {
+  return t === "hub" ? "Core Action Hub" : t === "summary" ? "Executive Summary" : "Reports";
 }
 
 function TabBtn({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode }) {
@@ -70,7 +84,9 @@ function TabBtn({ active, onClick, icon, children }: { active: boolean; onClick:
   );
 }
 
-function MetricsView() {
+/* -------------------- Executive Summary -------------------- */
+
+function ExecutiveSummary() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -141,6 +157,147 @@ const segmentMix = [
   { name: "SMB", value: 15 },
 ];
 
+/* -------------------- Core Action Hub -------------------- */
+
+function CoreActionHub() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+        <Stat icon={<CheckCircle2 className="size-4" />} label="Jobs OK (24h)" value="4,812" tone="success" />
+        <Stat icon={<AlertOctagon className="size-4" />} label="Failed Processes" value="14" tone="danger" />
+        <Stat icon={<Link2Off className="size-4" />} label="Unmapped CAGs" value="7" tone="warning" />
+        <Stat icon={<Clock className="size-4" />} label="Pending Actions" value="23" tone="info" />
+        <Stat icon={<Server className="size-4" />} label="System Errors" value="2" tone="danger" />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Panel title="Failed processes" desc="Last 24 hours" className="lg:col-span-2">
+          <ul className="divide-y divide-slate-100">
+            {failed.map((f) => (
+              <li key={f.id} className="flex items-center justify-between py-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs text-slate-500">{f.id}</span>
+                    <StatusChip tone="danger">{f.severity}</StatusChip>
+                  </div>
+                  <div className="mt-0.5 text-sm font-medium text-slate-900">{f.title}</div>
+                  <div className="text-xs text-slate-500">{f.client} · {f.when}</div>
+                </div>
+                <button className="inline-flex items-center gap-1 text-xs font-semibold text-brand-primary hover:underline">
+                  Investigate <ArrowRight className="size-3" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+
+        <Panel title="Pending actions" desc="Awaiting your review">
+          <ul className="space-y-3">
+            {pending.map((p) => (
+              <li key={p.id} className="rounded-md border border-slate-100 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-slate-500">{p.id}</span>
+                  <StatusChip tone={p.tone}>{p.label}</StatusChip>
+                </div>
+                <div className="mt-1 text-sm font-medium text-slate-900">{p.title}</div>
+                <div className="text-xs text-slate-500">{p.due}</div>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Panel title="Unmapped CAGs" desc="Carrier · Account · Group with no operational unit binding">
+          <table className="w-full text-sm">
+            <thead className="thead-brand">
+              <tr>
+                <th className="th-brand py-2 px-2 text-left">CAG</th>
+                <th className="th-brand py-2 px-2 text-left">Carrier</th>
+                <th className="th-brand py-2 px-2 text-left">Detected</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {unmapped.map((u) => (
+                <tr key={u.id} className="border-t border-slate-100">
+                  <td className="py-2 px-2 font-mono text-xs">{u.id}</td>
+                  <td className="px-2">{u.carrier}</td>
+                  <td className="px-2 text-slate-500">{u.detected}</td>
+                  <td className="text-right pr-2">
+                    <Link to="/clients" className="text-xs font-semibold text-brand-primary hover:underline">Map →</Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+
+        <Panel title="System health" desc="Integrations and background workers">
+          <ul className="space-y-2">
+            {systems.map((s) => (
+              <li key={s.name} className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 text-sm">
+                <span className="flex items-center gap-2 text-slate-700">
+                  <Activity className={`size-3.5 ${s.tone === "success" ? "text-emerald-500" : s.tone === "warning" ? "text-amber-500" : "text-rose-500"}`} />
+                  {s.name}
+                </span>
+                <StatusChip tone={s.tone}>{s.status}</StatusChip>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+const failed = [
+  { id: "JOB-78231", title: "Pricing recalculation failed for OU-7721", client: "Aramex", when: "12 min ago", severity: "Critical" },
+  { id: "JOB-78212", title: "Contract sync timeout", client: "Ashwini Logistics", when: "47 min ago", severity: "High" },
+  { id: "JOB-78189", title: "CAG ingestion rejected 3 rows", client: "DRP2302", when: "1 h ago", severity: "Medium" },
+  { id: "JOB-78104", title: "Carrier feed schema mismatch", client: "Priti Couriers", when: "3 h ago", severity: "High" },
+];
+
+const pending = [
+  { id: "REQ-441", title: "Approve volume override · OU-9902", due: "Due today", label: "Approval", tone: "warning" as const },
+  { id: "REQ-438", title: "Renew contract CONT-2024-0012", due: "Due in 6 days", label: "Renewal", tone: "info" as const },
+  { id: "REQ-435", title: "Confirm carrier migration · DHL Express", due: "Due in 12 days", label: "Migration", tone: "draft" as const },
+];
+
+const unmapped = [
+  { id: "CAG-902", carrier: "FedEx", detected: "2h ago" },
+  { id: "CAG-901", carrier: "UPS", detected: "5h ago" },
+  { id: "CAG-898", carrier: "OnTrac", detected: "1d ago" },
+];
+
+const systems: { name: string; status: string; tone: "success" | "warning" | "danger" }[] = [
+  { name: "Pricing Engine", status: "Operational", tone: "success" },
+  { name: "Carrier Feed (FedEx)", status: "Operational", tone: "success" },
+  { name: "Carrier Feed (DHL)", status: "Degraded", tone: "warning" },
+  { name: "Billing Webhook", status: "Operational", tone: "success" },
+  { name: "CAG Mapper", status: "2 errors", tone: "danger" },
+];
+
+function Stat({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string; tone: "success" | "danger" | "warning" | "info" }) {
+  const toneMap = {
+    success: "text-emerald-600 bg-emerald-50",
+    danger: "text-rose-600 bg-rose-50",
+    warning: "text-amber-600 bg-amber-50",
+    info: "text-sky-600 bg-sky-50",
+  };
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-slate-500">{label}</span>
+        <span className={`grid size-7 place-items-center rounded-md ${toneMap[tone]}`}>{icon}</span>
+      </div>
+      <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{value}</div>
+    </div>
+  );
+}
+
+/* -------------------- Reports -------------------- */
+
 function ReportsView() {
   const [reportId, setReportId] = useState<string>(reports[0].id);
   const [carrier, setCarrier] = useState("all");
@@ -148,76 +305,70 @@ function ReportsView() {
   const report = reports.find((r) => r.id === reportId)!;
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_1fr]">
-      <aside className="rounded-xl border border-slate-200 bg-white p-3">
-        <div className="px-2 pb-2 pt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Available Reports</div>
-        <ul className="space-y-0.5">
-          {reports.map((r) => (
-            <li key={r.id}>
-              <button
-                onClick={() => setReportId(r.id)}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm",
-                  reportId === r.id ? "bg-brand-secondary/[0.08] text-brand-secondary" : "text-slate-600 hover:bg-slate-50",
-                )}
-              >
-                <span>{r.name}</span>
-                <ChevronRight className="size-3.5 opacity-50" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      </aside>
-
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 pb-4">
-          <div>
-            <h3 className="text-base font-semibold text-slate-900">{report.name}</h3>
-            <p className="text-sm text-slate-500">{report.desc}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Filter className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter rows…" className="h-9 w-48 pl-8" />
-            </div>
-            <Select value={carrier} onValueChange={setCarrier}>
-              <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Carrier" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All carriers</SelectItem>
-                <SelectItem value="FedEx">FedEx</SelectItem>
-                <SelectItem value="UPS">UPS</SelectItem>
-                <SelectItem value="DHL">DHL</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm"><Download className="mr-1.5 size-3.5" /> CSV</Button>
-          </div>
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Report</div>
+          <Select value={reportId} onValueChange={setReportId}>
+            <SelectTrigger className="h-9 w-72 border-brand-secondary/20 bg-brand-secondary/[0.04] font-semibold text-brand-secondary">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {reports.map((r) => (
+                <SelectItem key={r.id} value={r.id}>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{r.name}</span>
+                    <span className="text-[11px] text-slate-500">{r.desc}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-
-        <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50/60 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              <tr>
-                {report.columns.map((c) => <th key={c} className="px-3 py-2 text-left">{c}</th>)}
-                <th className="w-10" />
-              </tr>
-            </thead>
-            <tbody>
-              {report.rows
-                .filter((r) => carrier === "all" || r.includes(carrier))
-                .filter((r) => !search || r.join(" ").toLowerCase().includes(search.toLowerCase()))
-                .map((row, i) => (
-                  <tr key={i} className="border-t border-slate-100 hover:bg-slate-50/60">
-                    {row.map((cell, j) => (
-                      <td key={j} className={cn("px-3 py-2", j === 0 ? "font-medium text-slate-900" : "text-slate-600")}>{cell}</td>
-                    ))}
-                    <td className="px-3 py-2 text-right">
-                      <button className="text-xs font-semibold text-brand-primary hover:underline">Drill down →</button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Filter className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter rows…" className="h-9 w-48 pl-8" />
+          </div>
+          <Select value={carrier} onValueChange={setCarrier}>
+            <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Carrier" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All carriers</SelectItem>
+              <SelectItem value="FedEx">FedEx</SelectItem>
+              <SelectItem value="UPS">UPS</SelectItem>
+              <SelectItem value="DHL">DHL</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm"><Download className="mr-1.5 size-3.5" /> CSV</Button>
         </div>
+      </div>
+
+      <div className="mt-2 text-xs text-slate-500">{report.desc}</div>
+
+      <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
+        <table className="w-full text-sm">
+          <thead className="thead-brand">
+            <tr>
+              {report.columns.map((c) => <th key={c} className="th-brand px-3 py-2 text-left">{c}</th>)}
+              <th className="w-10" />
+            </tr>
+          </thead>
+          <tbody>
+            {report.rows
+              .filter((r) => carrier === "all" || r.includes(carrier))
+              .filter((r) => !search || r.join(" ").toLowerCase().includes(search.toLowerCase()))
+              .map((row, i) => (
+                <tr key={i} className="border-t border-slate-100 hover:bg-slate-50/60">
+                  {row.map((cell, j) => (
+                    <td key={j} className={cn("px-3 py-2", j === 0 ? "font-medium text-slate-900" : "text-slate-600")}>{cell}</td>
+                  ))}
+                  <td className="px-3 py-2 text-right">
+                    <button className="text-xs font-semibold text-brand-primary hover:underline">Drill down →</button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

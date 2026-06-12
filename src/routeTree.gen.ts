@@ -9,16 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as InvoicesRouteImport } from './routes/invoices'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients.index'
 import { Route as MasterProductsRouteImport } from './routes/master.products'
 import { Route as MasterPricingRouteImport } from './routes/master.pricing'
 import { Route as MasterCarriersRouteImport } from './routes/master.carriers'
+import { Route as MasterAdminRouteImport } from './routes/master.admin'
 import { Route as ClientsClientIdRouteImport } from './routes/clients.$clientId'
 import { Route as ClientsClientIdIndexRouteImport } from './routes/clients.$clientId.index'
 import { Route as ClientsClientIdConfigurationRouteImport } from './routes/clients.$clientId.configuration'
 
+const InvoicesRoute = InvoicesRouteImport.update({
+  id: '/invoices',
+  path: '/invoices',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -49,6 +56,11 @@ const MasterCarriersRoute = MasterCarriersRouteImport.update({
   path: '/master/carriers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MasterAdminRoute = MasterAdminRouteImport.update({
+  id: '/master/admin',
+  path: '/master/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
   id: '/clients/$clientId',
   path: '/clients/$clientId',
@@ -69,7 +81,9 @@ const ClientsClientIdConfigurationRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/invoices': typeof InvoicesRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
+  '/master/admin': typeof MasterAdminRoute
   '/master/carriers': typeof MasterCarriersRoute
   '/master/pricing': typeof MasterPricingRoute
   '/master/products': typeof MasterProductsRoute
@@ -80,6 +94,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/invoices': typeof InvoicesRoute
+  '/master/admin': typeof MasterAdminRoute
   '/master/carriers': typeof MasterCarriersRoute
   '/master/pricing': typeof MasterPricingRoute
   '/master/products': typeof MasterProductsRoute
@@ -91,7 +107,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/invoices': typeof InvoicesRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
+  '/master/admin': typeof MasterAdminRoute
   '/master/carriers': typeof MasterCarriersRoute
   '/master/pricing': typeof MasterPricingRoute
   '/master/products': typeof MasterProductsRoute
@@ -104,7 +122,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/invoices'
     | '/clients/$clientId'
+    | '/master/admin'
     | '/master/carriers'
     | '/master/pricing'
     | '/master/products'
@@ -115,6 +135,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/invoices'
+    | '/master/admin'
     | '/master/carriers'
     | '/master/pricing'
     | '/master/products'
@@ -125,7 +147,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/invoices'
     | '/clients/$clientId'
+    | '/master/admin'
     | '/master/carriers'
     | '/master/pricing'
     | '/master/products'
@@ -137,7 +161,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
+  InvoicesRoute: typeof InvoicesRoute
   ClientsClientIdRoute: typeof ClientsClientIdRouteWithChildren
+  MasterAdminRoute: typeof MasterAdminRoute
   MasterCarriersRoute: typeof MasterCarriersRoute
   MasterPricingRoute: typeof MasterPricingRoute
   MasterProductsRoute: typeof MasterProductsRoute
@@ -146,6 +172,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/invoices': {
+      id: '/invoices'
+      path: '/invoices'
+      fullPath: '/invoices'
+      preLoaderRoute: typeof InvoicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -186,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/master/carriers'
       fullPath: '/master/carriers'
       preLoaderRoute: typeof MasterCarriersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master/admin': {
+      id: '/master/admin'
+      path: '/master/admin'
+      fullPath: '/master/admin'
+      preLoaderRoute: typeof MasterAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/clients/$clientId': {
@@ -229,7 +269,9 @@ const ClientsClientIdRouteWithChildren = ClientsClientIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
+  InvoicesRoute: InvoicesRoute,
   ClientsClientIdRoute: ClientsClientIdRouteWithChildren,
+  MasterAdminRoute: MasterAdminRoute,
   MasterCarriersRoute: MasterCarriersRoute,
   MasterPricingRoute: MasterPricingRoute,
   MasterProductsRoute: MasterProductsRoute,

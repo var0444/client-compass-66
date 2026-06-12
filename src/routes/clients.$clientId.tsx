@@ -1,7 +1,10 @@
 import { createFileRoute, Link, notFound, Outlet, useRouterState } from "@tanstack/react-router";
-import { ClipboardList, Settings2 } from "lucide-react";
+import { useState } from "react";
+import { ClipboardList, Pencil, Settings2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { StatusChip } from "@/components/StatusChip";
+import { Button } from "@/components/ui/button";
+import { AddEntityDialog, type FieldDef } from "@/components/AddEntityDialog";
 import { getClient } from "@/lib/clients-data";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +34,21 @@ function ClientLayout() {
   const { client } = Route.useLoaderData();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isConfig = pathname.endsWith("/configuration");
+  const [editOpen, setEditOpen] = useState(false);
+
+  const editFields: FieldDef[] = [
+    { type: "text", key: "name", label: "Client Name", required: true, defaultValue: client.name },
+    { type: "text", key: "client360Id", label: "Client360 ID", defaultValue: client.client360Id },
+    { type: "select", key: "segment", label: "Segment", defaultValue: client.segment, options: [
+      { value: "Enterprise", label: "Enterprise" }, { value: "Mid-Market", label: "Mid-Market" }, { value: "SMB", label: "SMB" },
+    ]},
+    { type: "text", key: "owner", label: "Account Owner", defaultValue: client.owner },
+    { type: "text", key: "billingAddress", label: "Billing Address", full: true, defaultValue: client.billingAddress },
+    { type: "text", key: "city", label: "City", defaultValue: client.city },
+    { type: "text", key: "state", label: "State", defaultValue: client.state },
+    { type: "text", key: "zipCode", label: "ZIP Code", defaultValue: client.zipCode },
+    { type: "switch", key: "active", label: "Active client", full: true, defaultValue: client.status === "active" },
+  ];
 
   return (
     <AppShell
@@ -46,7 +64,9 @@ function ClientLayout() {
           <StatusChip tone={client.status === "active" ? "success" : "neutral"}>
             {client.status === "active" ? "Active" : "Inactive"}
           </StatusChip>
-          <span className="hidden text-xs text-slate-400 md:inline">{client.segment}</span>
+          <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil className="mr-1.5 size-3.5" /> Edit Client
+          </Button>
         </div>
       }
     >
@@ -55,6 +75,15 @@ function ClientLayout() {
         <SubTab to="/clients/$clientId/configuration" active={isConfig} icon={<Settings2 className="size-4" />}>Configuration</SubTab>
       </div>
       <Outlet />
+
+      <AddEntityDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        title="Edit Client"
+        description="Update client information. Changes apply across all linked contracts and operational units."
+        fields={editFields}
+        submitLabel="Save Changes"
+      />
     </AppShell>
   );
 }

@@ -13,7 +13,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Gauge,
-  Activity,
+  FileText,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,15 +26,16 @@ interface NavItem {
 }
 
 const primary: NavItem[] = [
-  { to: "/", label: "Command Center", icon: Activity, match: (p) => p === "/" },
-  { to: "/dashboard", label: "Dashboard", icon: Gauge, match: (p) => p.startsWith("/dashboard") },
+  { to: "/dashboard", label: "Dashboard", icon: Gauge, match: (p) => p === "/" || p.startsWith("/dashboard") },
   { to: "/clients", label: "Clients", icon: Users, match: (p) => p === "/clients" || p.startsWith("/clients/") },
+  { to: "/invoices", label: "Invoices", icon: FileText, match: (p) => p.startsWith("/invoices") },
 ];
 
 const master: NavItem[] = [
   { to: "/master/carriers", label: "Carriers", icon: Truck },
   { to: "/master/products", label: "Products", icon: Package },
   { to: "/master/pricing", label: "Pricing", icon: Tag },
+  { to: "/master/admin", label: "Admin Center", icon: ShieldCheck },
 ];
 
 interface ShellProps {

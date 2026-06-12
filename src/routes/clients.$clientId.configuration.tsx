@@ -206,6 +206,7 @@ const uHelper = createColumnHelper<OperationalUnit>();
 
 function UnitsTab({ units, contracts }: { units: OperationalUnit[]; contracts: Contract[] }) {
   const [openAdd, setOpenAdd] = useState(false);
+  const [openCustom, setOpenCustom] = useState(false);
   const columns = useMemo(() => [
     uHelper.accessor("name", {
       header: "Operational Unit",
@@ -307,6 +308,9 @@ function UnitsTab({ units, contracts }: { units: OperationalUnit[]; contracts: C
             <div className="text-sm font-semibold text-slate-900">Product pricing (inline edit)</div>
             <div className="text-xs text-slate-500">Override per OU. Highlighted rows differ from contract base.</div>
           </div>
+          <Button size="sm" onClick={() => setOpenCustom(true)} className="bg-brand-primary text-white hover:bg-brand-primary-hover">
+            + Add Customized Pricing
+          </Button>
         </div>
         {units.map((u) => (
           <details key={u.id} className="group mt-2 rounded-md border border-slate-100 open:bg-slate-50/40">
@@ -321,11 +325,32 @@ function UnitsTab({ units, contracts }: { units: OperationalUnit[]; contracts: C
         ))}
       </div>
 
+
       <AddEntityDialog
         open={openAdd} onOpenChange={setOpenAdd}
         title="Add Operational Unit" description="Create a sub-client operational unit linked to a contract."
         fields={fields} submitLabel="Create Unit"
       />
+      <AddEntityDialog
+        open={openCustom} onOpenChange={setOpenCustom}
+        title="Add Customized Pricing"
+        description="Define a per-OU pricing override on top of the contract base. Existing customization workflow remains available via the OU edit panel."
+        submitLabel="Add Override"
+        fields={[
+          { type: "select", key: "unit", label: "Operational Unit", required: true, options: units.map((u) => ({ value: u.id, label: u.name })) },
+          { type: "select", key: "product", label: "Product", required: true, options: Array.from(new Set(units.flatMap((u) => u.products.map((p) => p.name)))).map((n) => ({ value: n, label: n })) },
+          { type: "select", key: "model", label: "Pricing Model", options: [
+            { value: "tier2", label: "Tier 2 Override" }, { value: "volume", label: "Volume Discount" }, { value: "flat", label: "Flat Rate" }, { value: "custom", label: "Custom" },
+          ]},
+          { type: "text", key: "basePrice", label: "Base Price", placeholder: "$12.50" },
+          { type: "text", key: "adjusted", label: "Adjusted Price", placeholder: "$11.20", required: true },
+          { type: "date", key: "from", label: "Effective From", required: true },
+          { type: "date", key: "to", label: "Effective To" },
+          { type: "textarea", key: "reason", label: "Justification", full: true, placeholder: "Why this override is necessary…" },
+          { type: "switch", key: "active", label: "Activate immediately", full: true, defaultValue: true },
+        ]}
+      />
+
     </div>
   );
 }
@@ -334,13 +359,13 @@ function InlinePricingEditor({ products }: { products: ProductPrice[] }) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200">
       <table className="w-full text-sm">
-        <thead className="bg-slate-50/60 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        <thead className="thead-brand">
           <tr>
-            <th className="px-3 py-2 text-left">Product</th>
-            <th className="px-3 py-2 text-left">Model</th>
-            <th className="px-3 py-2 text-right">Base</th>
-            <th className="px-3 py-2 text-right">Adjusted</th>
-            <th className="px-3 py-2 text-right">Δ</th>
+            <th className="th-brand px-3 py-2 text-left">Product</th>
+            <th className="th-brand px-3 py-2 text-left">Model</th>
+            <th className="th-brand px-3 py-2 text-right">Base</th>
+            <th className="th-brand px-3 py-2 text-right">Adjusted</th>
+            <th className="th-brand px-3 py-2 text-right">Δ</th>
           </tr>
         </thead>
         <tbody>
@@ -422,15 +447,15 @@ function PricingTab({ units, contracts }: { units: OperationalUnit[]; contracts:
 
         <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50/60 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <thead className="thead-brand">
               <tr>
-                <th className="px-3 py-2 text-left">Product</th>
-                <th className="px-3 py-2 text-left">Model</th>
-                <th className="px-3 py-2 text-right">Contract Base</th>
+                <th className="th-brand px-3 py-2 text-left">Product</th>
+                <th className="th-brand px-3 py-2 text-left">Model</th>
+                <th className="th-brand px-3 py-2 text-right">Contract Base</th>
                 {units.map((u) => (
-                  <th key={u.id} className="px-3 py-2 text-right">
-                    <div className="text-slate-700">{u.name}</div>
-                    <div className="font-mono text-[10px] font-normal text-slate-400">{u.id}</div>
+                  <th key={u.id} className="th-brand px-3 py-2 text-right">
+                    <div>{u.name}</div>
+                    <div className="font-mono text-[10px] font-normal normal-case tracking-normal text-slate-400">{u.id}</div>
                   </th>
                 ))}
               </tr>
