@@ -16,6 +16,7 @@ import { Route as ClientsIndexRouteImport } from './routes/clients.index'
 import { Route as MasterProductsRouteImport } from './routes/master.products'
 import { Route as MasterPricingRouteImport } from './routes/master.pricing'
 import { Route as MasterCarriersRouteImport } from './routes/master.carriers'
+import { Route as MasterAdminRouteImport } from './routes/master.admin'
 import { Route as ClientsClientIdRouteImport } from './routes/clients.$clientId'
 import { Route as ClientsClientIdIndexRouteImport } from './routes/clients.$clientId.index'
 import { Route as ClientsClientIdConfigurationRouteImport } from './routes/clients.$clientId.configuration'
@@ -55,6 +56,11 @@ const MasterCarriersRoute = MasterCarriersRouteImport.update({
   path: '/master/carriers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MasterAdminRoute = MasterAdminRouteImport.update({
+  id: '/master/admin',
+  path: '/master/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
   id: '/clients/$clientId',
   path: '/clients/$clientId',
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/invoices': typeof InvoicesRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
+  '/master/admin': typeof MasterAdminRoute
   '/master/carriers': typeof MasterCarriersRoute
   '/master/pricing': typeof MasterPricingRoute
   '/master/products': typeof MasterProductsRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/invoices': typeof InvoicesRoute
+  '/master/admin': typeof MasterAdminRoute
   '/master/carriers': typeof MasterCarriersRoute
   '/master/pricing': typeof MasterPricingRoute
   '/master/products': typeof MasterProductsRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/invoices': typeof InvoicesRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
+  '/master/admin': typeof MasterAdminRoute
   '/master/carriers': typeof MasterCarriersRoute
   '/master/pricing': typeof MasterPricingRoute
   '/master/products': typeof MasterProductsRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/invoices'
     | '/clients/$clientId'
+    | '/master/admin'
     | '/master/carriers'
     | '/master/pricing'
     | '/master/products'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/invoices'
+    | '/master/admin'
     | '/master/carriers'
     | '/master/pricing'
     | '/master/products'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/invoices'
     | '/clients/$clientId'
+    | '/master/admin'
     | '/master/carriers'
     | '/master/pricing'
     | '/master/products'
@@ -151,6 +163,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   InvoicesRoute: typeof InvoicesRoute
   ClientsClientIdRoute: typeof ClientsClientIdRouteWithChildren
+  MasterAdminRoute: typeof MasterAdminRoute
   MasterCarriersRoute: typeof MasterCarriersRoute
   MasterPricingRoute: typeof MasterPricingRoute
   MasterProductsRoute: typeof MasterProductsRoute
@@ -208,6 +221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MasterCarriersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/master/admin': {
+      id: '/master/admin'
+      path: '/master/admin'
+      fullPath: '/master/admin'
+      preLoaderRoute: typeof MasterAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clients/$clientId': {
       id: '/clients/$clientId'
       path: '/clients/$clientId'
@@ -251,6 +271,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   InvoicesRoute: InvoicesRoute,
   ClientsClientIdRoute: ClientsClientIdRouteWithChildren,
+  MasterAdminRoute: MasterAdminRoute,
   MasterCarriersRoute: MasterCarriersRoute,
   MasterPricingRoute: MasterPricingRoute,
   MasterProductsRoute: MasterProductsRoute,
@@ -259,3 +280,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
