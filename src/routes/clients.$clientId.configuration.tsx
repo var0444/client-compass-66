@@ -331,6 +331,26 @@ function UnitsTab({ units, contracts }: { units: OperationalUnit[]; contracts: C
         title="Add Operational Unit" description="Create a sub-client operational unit linked to a contract."
         fields={fields} submitLabel="Create Unit"
       />
+      <AddEntityDialog
+        open={openCustom} onOpenChange={setOpenCustom}
+        title="Add Customized Pricing"
+        description="Define a per-OU pricing override on top of the contract base. Existing customization workflow remains available via the OU edit panel."
+        submitLabel="Add Override"
+        fields={[
+          { type: "select", key: "unit", label: "Operational Unit", required: true, options: units.map((u) => ({ value: u.id, label: u.name })) },
+          { type: "select", key: "product", label: "Product", required: true, options: Array.from(new Set(units.flatMap((u) => u.products.map((p) => p.name)))).map((n) => ({ value: n, label: n })) },
+          { type: "select", key: "model", label: "Pricing Model", options: [
+            { value: "tier2", label: "Tier 2 Override" }, { value: "volume", label: "Volume Discount" }, { value: "flat", label: "Flat Rate" }, { value: "custom", label: "Custom" },
+          ]},
+          { type: "text", key: "basePrice", label: "Base Price", placeholder: "$12.50" },
+          { type: "text", key: "adjusted", label: "Adjusted Price", placeholder: "$11.20", required: true },
+          { type: "date", key: "from", label: "Effective From", required: true },
+          { type: "date", key: "to", label: "Effective To" },
+          { type: "textarea", key: "reason", label: "Justification", full: true, placeholder: "Why this override is necessary…" },
+          { type: "switch", key: "active", label: "Activate immediately", full: true, defaultValue: true },
+        ]}
+      />
+
     </div>
   );
 }
