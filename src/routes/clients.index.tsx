@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { LayoutDashboard, Settings2, MapPin, Mail, Building2 } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { DataTable } from "@/components/DataTable";
 import { StatusChip } from "@/components/StatusChip";
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/clients/")({
   head: () => ({
     meta: [
       { title: "Clients · Client360" },
-      { name: "description", content: "Search, expand, and manage clients, contracts, operational units and pricing." },
+      { name: "description", content: "Search, manage, and navigate clients, contracts, operational units and pricing." },
     ],
   }),
 });
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/clients/")({
 const ch = createColumnHelper<Client>();
 
 function ClientOverview() {
+  const navigate = useNavigate();
   const [openDrawer, setOpenDrawer] = useState(false);
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -69,6 +70,11 @@ function ClientOverview() {
             ? <StatusChip tone="success">Active</StatusChip>
             : <StatusChip tone="neutral">Inactive</StatusChip>,
       }),
+      ch.display({
+        id: "open",
+        header: "",
+        cell: () => <ChevronRight className="ml-auto size-4 text-slate-300" />,
+      }),
     ],
     [],
   );
@@ -89,6 +95,7 @@ function ClientOverview() {
         columns={columns}
         searchPlaceholder="Search by name, ID, state, city…"
         searchKeys={["name", "client360Id", "state", "city", "billingAddress", "owner", "segment"]}
+        onRowClick={(c) => navigate({ to: "/clients/$clientId", params: { clientId: c.id } })}
         toolbar={
           <>
             <Select value={stateFilter} onValueChange={setStateFilter}>
@@ -108,57 +115,9 @@ function ClientOverview() {
             </Select>
           </>
         }
-        renderExpanded={(c) => (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div>
-              <SectionLabel>Billing Address</SectionLabel>
-              <div className="mt-2 flex items-start gap-2 text-sm text-slate-700">
-                <MapPin className="mt-0.5 size-4 text-slate-400" />
-                <div>
-                  <div>{c.billingAddress}</div>
-                  <div className="text-slate-500">{c.city}, {c.state} {c.zipCode}</div>
-                </div>
-              </div>
-            </div>
-            <div>
-              <SectionLabel>Account</SectionLabel>
-              <div className="mt-2 space-y-1.5 text-sm">
-                <div className="flex items-center gap-2 text-slate-700"><Building2 className="size-4 text-slate-400" /> {c.segment}</div>
-                <div className="flex items-center gap-2 text-slate-700"><Mail className="size-4 text-slate-400" /> Owner: {c.owner}</div>
-              </div>
-            </div>
-            <div className="flex flex-col items-start gap-2 md:items-end">
-              <SectionLabel className="self-start md:self-end">Quick Access</SectionLabel>
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  to="/clients/$clientId"
-                  params={{ clientId: c.id }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand-secondary px-3 py-2 text-xs font-semibold text-white hover:bg-brand-secondary-hover"
-                >
-                  <LayoutDashboard className="size-3.5" /> Client Summary
-                </Link>
-                <Link
-                  to="/clients/$clientId/configuration"
-                  params={{ clientId: c.id }}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-brand-primary hover:text-brand-primary"
-                >
-                  <Settings2 className="size-3.5" /> Configuration
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
       />
 
       <AddClientDrawer open={openDrawer} onOpenChange={setOpenDrawer} />
     </AppShell>
-  );
-}
-
-function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`text-[10px] font-bold uppercase tracking-wider text-slate-400 ${className ?? ""}`}>
-      {children}
-    </div>
   );
 }
