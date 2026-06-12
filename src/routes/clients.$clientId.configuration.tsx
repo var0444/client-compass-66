@@ -307,6 +307,9 @@ function UnitsTab({ units, contracts }: { units: OperationalUnit[]; contracts: C
             <div className="text-sm font-semibold text-slate-900">Product pricing (inline edit)</div>
             <div className="text-xs text-slate-500">Override per OU. Highlighted rows differ from contract base.</div>
           </div>
+          <Button size="sm" onClick={() => setOpenCustom(true)} className="bg-brand-primary text-white hover:bg-brand-primary-hover">
+            + Add Customized Pricing
+          </Button>
         </div>
         {units.map((u) => (
           <details key={u.id} className="group mt-2 rounded-md border border-slate-100 open:bg-slate-50/40">
@@ -320,6 +323,7 @@ function UnitsTab({ units, contracts }: { units: OperationalUnit[]; contracts: C
           </details>
         ))}
       </div>
+
 
       <AddEntityDialog
         open={openAdd} onOpenChange={setOpenAdd}
