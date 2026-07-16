@@ -3,10 +3,11 @@ import { useState } from "react";
 import {
   TrendingUp, TrendingDown, FileBarChart, BarChart3, Filter, Download, ArrowRight,
   Activity, AlertOctagon, Link2Off, Clock, CheckCircle2, Server,
+  Sparkles, Zap, DollarSign, PackageX, GitCompare, Radar,
 } from "lucide-react";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
-  Pie, PieChart, Cell, Legend,
+  Pie, PieChart, Cell, Legend, Line, LineChart, ReferenceDot,
 } from "recharts";
 import { AppShell } from "@/components/AppShell";
 import { StatusChip } from "@/components/StatusChip";
@@ -162,13 +163,17 @@ const segmentMix = [
 function CoreActionHub() {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
         <Stat icon={<CheckCircle2 className="size-4" />} label="Jobs OK (24h)" value="4,812" tone="success" />
         <Stat icon={<AlertOctagon className="size-4" />} label="Failed Processes" value="14" tone="danger" />
+        <Stat icon={<Radar className="size-4" />} label="Anomalies (24h)" value="9" tone="warning" />
         <Stat icon={<Link2Off className="size-4" />} label="Unmapped CAGs" value="7" tone="warning" />
         <Stat icon={<Clock className="size-4" />} label="Pending Actions" value="23" tone="info" />
         <Stat icon={<Server className="size-4" />} label="System Errors" value="2" tone="danger" />
       </div>
+
+      <AnomalySection />
+
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Panel title="Failed processes" desc="Last 24 hours" className="lg:col-span-2">
@@ -250,6 +255,165 @@ function CoreActionHub() {
     </div>
   );
 }
+
+/* -------------------- Anomaly Detection -------------------- */
+
+const anomalyTrend = [
+  { t: "00:00", actual: 412, baseline: 420 },
+  { t: "02:00", actual: 398, baseline: 410 },
+  { t: "04:00", actual: 405, baseline: 400 },
+  { t: "06:00", actual: 430, baseline: 425 },
+  { t: "08:00", actual: 512, baseline: 480 },
+  { t: "10:00", actual: 690, baseline: 505, anomaly: true },
+  { t: "12:00", actual: 522, baseline: 515 },
+  { t: "14:00", actual: 498, baseline: 510 },
+  { t: "16:00", actual: 260, baseline: 500, anomaly: true },
+  { t: "18:00", actual: 470, baseline: 485 },
+  { t: "20:00", actual: 455, baseline: 460 },
+  { t: "22:00", actual: 610, baseline: 440, anomaly: true },
+];
+
+const anomalyMix = [
+  { name: "Pricing spike", value: 4, color: "#FF612B", icon: DollarSign },
+  { name: "Volume drop", value: 2, color: "#F59E0B", icon: TrendingDown },
+  { name: "Latency", value: 2, color: "#0EA5E9", icon: Zap },
+  { name: "Duplicate CAG", value: 1, color: "#8B5CF6", icon: GitCompare },
+];
+
+const anomalies = [
+  {
+    id: "ANM-3391", type: "Pricing spike", tone: "danger" as const, icon: DollarSign,
+    title: "Contract rate 34% above rolling 30-day baseline",
+    client: "Aramex · OU West Coast · FedEx Ground", when: "22 min ago",
+    metric: "$18.42 vs $13.75", severity: "High", confidence: 0.94,
+  },
+  {
+    id: "ANM-3388", type: "Volume drop", tone: "warning" as const, icon: TrendingDown,
+    title: "Shipment volume dropped 62% vs expected",
+    client: "DRP2301 · OU Northeast · DHL Express", when: "1 h ago",
+    metric: "412 vs ~1,080", severity: "Medium", confidence: 0.88,
+  },
+  {
+    id: "ANM-3384", type: "Latency", tone: "info" as const, icon: Zap,
+    title: "Carrier feed p95 latency spiked to 4.8s",
+    client: "System · UPS ingestion worker", when: "2 h ago",
+    metric: "4.8s vs 0.9s", severity: "Medium", confidence: 0.79,
+  },
+  {
+    id: "ANM-3379", type: "Duplicate CAG", tone: "draft" as const, icon: GitCompare,
+    title: "Duplicate CAG assignment detected across 2 OUs",
+    client: "Ashwini Logistics · OU Central & South", when: "4 h ago",
+    metric: "CAG-8821 shared", severity: "Low", confidence: 0.97,
+  },
+  {
+    id: "ANM-3372", type: "Pricing spike", tone: "danger" as const, icon: DollarSign,
+    title: "Fuel surcharge exceeded contractual cap",
+    client: "Priti Couriers · OU Metro · FedEx", when: "6 h ago",
+    metric: "8.2% vs 6.0% cap", severity: "High", confidence: 0.91,
+  },
+];
+
+function AnomalySection() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="grid size-7 place-items-center rounded-md bg-gradient-to-br from-brand-primary/15 to-amber-100 text-brand-primary">
+            <Sparkles className="size-4" />
+          </span>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Anomaly Detection</h2>
+            <p className="text-xs text-slate-500">ML-flagged deviations from rolling baselines across pricing, volume, latency & mapping.</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <StatusChip tone="warning">9 open</StatusChip>
+          <StatusChip tone="success">Model v2.4</StatusChip>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Panel title="Baseline vs actual" desc="Shipment throughput · last 24h (dots = anomalies)" className="lg:col-span-2">
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={anomalyTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
+                <XAxis dataKey="t" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={40} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                <Line type="monotone" dataKey="baseline" stroke="#94a3b8" strokeDasharray="4 4" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="actual" stroke="#002677" strokeWidth={2} dot={false} />
+                {anomalyTrend.filter((d) => d.anomaly).map((d) => (
+                  <ReferenceDot key={d.t} x={d.t} y={d.actual} r={5} fill="#FF612B" stroke="white" strokeWidth={2} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Panel>
+
+        <Panel title="Anomalies by type" desc="Last 24 hours">
+          <ul className="space-y-2">
+            {anomalyMix.map((a) => {
+              const Icon = a.icon;
+              const total = anomalyMix.reduce((s, x) => s + x.value, 0);
+              const pct = Math.round((a.value / total) * 100);
+              return (
+                <li key={a.name}>
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 font-medium text-slate-700">
+                      <Icon className="size-3.5" style={{ color: a.color }} /> {a.name}
+                    </span>
+                    <span className="font-mono text-slate-500">{a.value} · {pct}%</span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: a.color }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </Panel>
+      </div>
+
+      <Panel title="Recent anomalies" desc="Ranked by severity and confidence">
+        <ul className="divide-y divide-slate-100">
+          {anomalies.map((a) => {
+            const Icon = a.icon;
+            return (
+              <li key={a.id} className="flex items-start justify-between gap-4 py-3">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 grid size-8 place-items-center rounded-md bg-slate-50 text-slate-600 ring-1 ring-slate-200">
+                    <Icon className="size-4" />
+                  </span>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs text-slate-500">{a.id}</span>
+                      <StatusChip tone={a.tone}>{a.type}</StatusChip>
+                      <span className="text-[11px] text-slate-500">Severity: <span className="font-semibold text-slate-700">{a.severity}</span></span>
+                      <span className="text-[11px] text-slate-500">Confidence: <span className="font-semibold text-slate-700">{Math.round(a.confidence * 100)}%</span></span>
+                    </div>
+                    <div className="mt-0.5 text-sm font-medium text-slate-900">{a.title}</div>
+                    <div className="text-xs text-slate-500">{a.client} · {a.when} · <span className="font-mono">{a.metric}</span></div>
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <button className="text-xs font-semibold text-slate-500 hover:text-slate-900">Dismiss</button>
+                  <button className="inline-flex items-center gap-1 text-xs font-semibold text-brand-primary hover:underline">
+                    Investigate <ArrowRight className="size-3" />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </Panel>
+    </div>
+  );
+}
+
+// Silence unused-import warning when tree-shaken
+void PackageX;
 
 const failed = [
   { id: "JOB-78231", title: "Pricing recalculation failed for OU-7721", client: "Aramex", when: "12 min ago", severity: "Critical" },
