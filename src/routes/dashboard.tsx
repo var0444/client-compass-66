@@ -163,13 +163,17 @@ const segmentMix = [
 function CoreActionHub() {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
         <Stat icon={<CheckCircle2 className="size-4" />} label="Jobs OK (24h)" value="4,812" tone="success" />
         <Stat icon={<AlertOctagon className="size-4" />} label="Failed Processes" value="14" tone="danger" />
+        <Stat icon={<Radar className="size-4" />} label="Anomalies (24h)" value="9" tone="warning" />
         <Stat icon={<Link2Off className="size-4" />} label="Unmapped CAGs" value="7" tone="warning" />
         <Stat icon={<Clock className="size-4" />} label="Pending Actions" value="23" tone="info" />
         <Stat icon={<Server className="size-4" />} label="System Errors" value="2" tone="danger" />
       </div>
+
+      <AnomalySection />
+
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Panel title="Failed processes" desc="Last 24 hours" className="lg:col-span-2">
