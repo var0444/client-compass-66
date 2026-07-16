@@ -3,10 +3,11 @@ import { useState } from "react";
 import {
   TrendingUp, TrendingDown, FileBarChart, BarChart3, Filter, Download, ArrowRight,
   Activity, AlertOctagon, Link2Off, Clock, CheckCircle2, Server,
+  Sparkles, Zap, DollarSign, PackageX, GitCompare, Radar,
 } from "lucide-react";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
-  Pie, PieChart, Cell, Legend,
+  Pie, PieChart, Cell, Legend, Line, LineChart, ReferenceDot,
 } from "recharts";
 import { AppShell } from "@/components/AppShell";
 import { StatusChip } from "@/components/StatusChip";
