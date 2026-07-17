@@ -165,12 +165,12 @@ function CoreActionHub() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
-        <Stat icon={<CheckCircle2 className="size-4" />} label="Jobs OK (24h)" value="4,812" tone="success" />
-        <Stat icon={<AlertOctagon className="size-4" />} label="Failed Processes" value="14" tone="danger" />
-        <Stat icon={<Radar className="size-4" />} label="Anomalies (24h)" value="9" tone="warning" />
-        <Stat icon={<Link2Off className="size-4" />} label="Unmapped CAGs" value="7" tone="warning" />
-        <Stat icon={<Clock className="size-4" />} label="Pending Actions" value="23" tone="info" />
-        <Stat icon={<Server className="size-4" />} label="System Errors" value="2" tone="danger" />
+        <Stat icon={<CheckCircle2 className="size-4" />} label="Claims billed (24h)" value="182,441" tone="success" />
+        <Stat icon={<AlertOctagon className="size-4" />} label="Failed billing runs" value="14" tone="danger" />
+        <Stat icon={<Radar className="size-4" />} label="PBM anomalies (24h)" value="11" tone="warning" />
+        <Stat icon={<RotateCcw className="size-4" />} label="Reversals flagged" value="38" tone="warning" />
+        <Stat icon={<Clock className="size-4" />} label="Rebate reviews pending" value="9" tone="info" />
+        <Stat icon={<ShieldAlert className="size-4" />} label="Compliance alerts" value="3" tone="danger" />
       </div>
 
       <AnomalySection />
