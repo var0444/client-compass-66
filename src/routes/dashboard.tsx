@@ -4,6 +4,7 @@ import {
   TrendingUp, TrendingDown, FileBarChart, BarChart3, Filter, Download, ArrowRight,
   Activity, AlertOctagon, Link2Off, Clock, CheckCircle2, Server,
   Sparkles, Zap, DollarSign, PackageX, GitCompare, Radar,
+  Pill, Receipt, ShieldAlert, Percent, RotateCcw, FileWarning,
 } from "lucide-react";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
