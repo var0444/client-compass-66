@@ -260,57 +260,71 @@ function CoreActionHub() {
 /* -------------------- Anomaly Detection -------------------- */
 
 const anomalyTrend = [
-  { t: "00:00", actual: 412, baseline: 420 },
-  { t: "02:00", actual: 398, baseline: 410 },
-  { t: "04:00", actual: 405, baseline: 400 },
-  { t: "06:00", actual: 430, baseline: 425 },
-  { t: "08:00", actual: 512, baseline: 480 },
-  { t: "10:00", actual: 690, baseline: 505, anomaly: true },
-  { t: "12:00", actual: 522, baseline: 515 },
-  { t: "14:00", actual: 498, baseline: 510 },
-  { t: "16:00", actual: 260, baseline: 500, anomaly: true },
-  { t: "18:00", actual: 470, baseline: 485 },
-  { t: "20:00", actual: 455, baseline: 460 },
-  { t: "22:00", actual: 610, baseline: 440, anomaly: true },
+  { t: "00:00", actual: 6420, baseline: 6500 },
+  { t: "02:00", actual: 5980, baseline: 6100 },
+  { t: "04:00", actual: 5750, baseline: 5900 },
+  { t: "06:00", actual: 6300, baseline: 6250 },
+  { t: "08:00", actual: 8120, baseline: 7800 },
+  { t: "10:00", actual: 11890, baseline: 8600, anomaly: true },
+  { t: "12:00", actual: 8450, baseline: 8300 },
+  { t: "14:00", actual: 8210, baseline: 8200 },
+  { t: "16:00", actual: 3120, baseline: 7900, anomaly: true },
+  { t: "18:00", actual: 7480, baseline: 7500 },
+  { t: "20:00", actual: 7210, baseline: 7100 },
+  { t: "22:00", actual: 9840, baseline: 6800, anomaly: true },
 ];
 
 const anomalyMix = [
-  { name: "Pricing spike", value: 4, color: "#FF612B", icon: DollarSign },
-  { name: "Volume drop", value: 2, color: "#F59E0B", icon: TrendingDown },
-  { name: "Latency", value: 2, color: "#0EA5E9", icon: Zap },
-  { name: "Duplicate CAG", value: 1, color: "#8B5CF6", icon: GitCompare },
+  { name: "AWP / MAC pricing deviation", value: 3, color: "#FF612B", icon: DollarSign },
+  { name: "Rebate variance", value: 2, color: "#002677", icon: Percent },
+  { name: "Claim reversal spike", value: 2, color: "#F59E0B", icon: RotateCcw },
+  { name: "DIR fee mismatch", value: 2, color: "#0EA5E9", icon: Receipt },
+  { name: "340B duplicate discount", value: 1, color: "#8B5CF6", icon: ShieldAlert },
+  { name: "Formulary tier drift", value: 1, color: "#10B981", icon: Pill },
 ];
 
 const anomalies = [
   {
-    id: "ANM-3391", type: "Pricing spike", tone: "danger" as const, icon: DollarSign,
-    title: "Contract rate 34% above rolling 30-day baseline",
-    client: "Aramex · OU West Coast · FedEx Ground", when: "22 min ago",
-    metric: "$18.42 vs $13.75", severity: "High", confidence: 0.94,
+    id: "PBM-3391", type: "AWP pricing deviation", tone: "danger" as const, icon: DollarSign,
+    title: "Ingredient cost 22% above AWP-15% contracted rate",
+    client: "UnitedHealth Grp · OU Midwest Retail · NDC 00093-7146", when: "18 min ago",
+    metric: "$142.80 vs $117.05 allowed", severity: "High", confidence: 0.96,
   },
   {
-    id: "ANM-3388", type: "Volume drop", tone: "warning" as const, icon: TrendingDown,
-    title: "Shipment volume dropped 62% vs expected",
-    client: "DRP2301 · OU Northeast · DHL Express", when: "1 h ago",
-    metric: "412 vs ~1,080", severity: "Medium", confidence: 0.88,
+    id: "PBM-3388", type: "Rebate variance", tone: "warning" as const, icon: Percent,
+    title: "Manufacturer rebate accrual short by 34% vs contracted guarantee",
+    client: "Elevance Health · Commercial Book · Q3 accrual", when: "1 h ago",
+    metric: "$2.14 PMPM vs $3.25 guarantee", severity: "High", confidence: 0.91,
   },
   {
-    id: "ANM-3384", type: "Latency", tone: "info" as const, icon: Zap,
-    title: "Carrier feed p95 latency spiked to 4.8s",
-    client: "System · UPS ingestion worker", when: "2 h ago",
-    metric: "4.8s vs 0.9s", severity: "Medium", confidence: 0.79,
+    id: "PBM-3384", type: "Claim reversal spike", tone: "warning" as const, icon: RotateCcw,
+    title: "Reversal rate 4.8× baseline for Medicare Part D group",
+    client: "Humana · MAPD Group 88231 · 24h window", when: "2 h ago",
+    metric: "38 reversals vs ~8 expected", severity: "Medium", confidence: 0.87,
   },
   {
-    id: "ANM-3379", type: "Duplicate CAG", tone: "draft" as const, icon: GitCompare,
-    title: "Duplicate CAG assignment detected across 2 OUs",
-    client: "Ashwini Logistics · OU Central & South", when: "4 h ago",
-    metric: "CAG-8821 shared", severity: "Low", confidence: 0.97,
+    id: "PBM-3379", type: "340B duplicate discount", tone: "danger" as const, icon: ShieldAlert,
+    title: "340B claim also billed with manufacturer rebate (duplicate discount)",
+    client: "CVS Caremark · Covered entity CE-4421", when: "3 h ago",
+    metric: "12 claims · $8,940 exposure", severity: "High", confidence: 0.98,
   },
   {
-    id: "ANM-3372", type: "Pricing spike", tone: "danger" as const, icon: DollarSign,
-    title: "Fuel surcharge exceeded contractual cap",
-    client: "Priti Couriers · OU Metro · FedEx", when: "6 h ago",
-    metric: "8.2% vs 6.0% cap", severity: "High", confidence: 0.91,
+    id: "PBM-3372", type: "DIR fee mismatch", tone: "info" as const, icon: Receipt,
+    title: "Retro DIR fee assessed above ceiling on preferred pharmacy network",
+    client: "Cigna Express Scripts · OU Southeast", when: "5 h ago",
+    metric: "6.1% vs 4.5% cap", severity: "Medium", confidence: 0.83,
+  },
+  {
+    id: "PBM-3365", type: "Copay mismatch", tone: "draft" as const, icon: FileWarning,
+    title: "Member copay deviates from benefit plan tier design",
+    client: "BCBS FEP · Plan FEP-Std · Tier 2 generics", when: "7 h ago",
+    metric: "Avg $18 vs $10 tier design", severity: "Low", confidence: 0.79,
+  },
+  {
+    id: "PBM-3358", type: "Formulary tier drift", tone: "draft" as const, icon: Pill,
+    title: "Non-formulary NDCs adjudicated at preferred tier pricing",
+    client: "Aetna · Commercial NPF formulary", when: "9 h ago",
+    metric: "27 NDCs · $12,410 impact", severity: "Medium", confidence: 0.85,
   },
 ];
 
@@ -323,18 +337,19 @@ function AnomalySection() {
             <Sparkles className="size-4" />
           </span>
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Anomaly Detection</h2>
-            <p className="text-xs text-slate-500">ML-flagged deviations from rolling baselines across pricing, volume, latency & mapping.</p>
+            <h2 className="text-sm font-semibold text-slate-900">PBM Billing Anomalies</h2>
+            <p className="text-xs text-slate-500">ML-flagged deviations across US healthcare PBM billing — AWP/MAC pricing, rebates, DIR fees, 340B, reversals & formulary adherence.</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <StatusChip tone="warning">9 open</StatusChip>
+          <StatusChip tone="info">HIPAA-scoped</StatusChip>
+          <StatusChip tone="warning">11 open</StatusChip>
           <StatusChip tone="success">Model v2.4</StatusChip>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Panel title="Baseline vs actual" desc="Shipment throughput · last 24h (dots = anomalies)" className="lg:col-span-2">
+        <Panel title="Baseline vs actual" desc="Rx claims adjudicated per 2h · last 24h (dots = anomalies)" className="lg:col-span-2">
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={anomalyTrend}>
