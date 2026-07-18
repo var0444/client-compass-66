@@ -260,73 +260,169 @@ function CoreActionHub() {
 /* -------------------- Anomaly Detection -------------------- */
 
 const anomalyTrend = [
-  { t: "00:00", actual: 6420, baseline: 6500 },
-  { t: "02:00", actual: 5980, baseline: 6100 },
-  { t: "04:00", actual: 5750, baseline: 5900 },
-  { t: "06:00", actual: 6300, baseline: 6250 },
-  { t: "08:00", actual: 8120, baseline: 7800 },
-  { t: "10:00", actual: 11890, baseline: 8600, anomaly: true },
-  { t: "12:00", actual: 8450, baseline: 8300 },
-  { t: "14:00", actual: 8210, baseline: 8200 },
-  { t: "16:00", actual: 3120, baseline: 7900, anomaly: true },
-  { t: "18:00", actual: 7480, baseline: 7500 },
-  { t: "20:00", actual: 7210, baseline: 7100 },
-  { t: "22:00", actual: 9840, baseline: 6800, anomaly: true },
+  { t: "Wk1", actual: 3.82, baseline: 3.80 },
+  { t: "Wk2", actual: 3.91, baseline: 3.88 },
+  { t: "Wk3", actual: 3.76, baseline: 3.85 },
+  { t: "Wk4", actual: 4.62, baseline: 3.90, anomaly: true },
+  { t: "Wk5", actual: 3.94, baseline: 3.95 },
+  { t: "Wk6", actual: 4.02, baseline: 4.00 },
+  { t: "Wk7", actual: 3.21, baseline: 4.05, anomaly: true },
+  { t: "Wk8", actual: 4.10, baseline: 4.08 },
+  { t: "Wk9", actual: 4.18, baseline: 4.12 },
+  { t: "Wk10", actual: 4.85, baseline: 4.15, anomaly: true },
+  { t: "Wk11", actual: 4.20, baseline: 4.18 },
+  { t: "Wk12", actual: 4.24, baseline: 4.22 },
 ];
 
 const anomalyMix = [
-  { name: "AWP / MAC pricing deviation", value: 3, color: "#FF612B", icon: DollarSign },
-  { name: "Rebate variance", value: 2, color: "#002677", icon: Percent },
-  { name: "Claim reversal spike", value: 2, color: "#F59E0B", icon: RotateCcw },
-  { name: "DIR fee mismatch", value: 2, color: "#0EA5E9", icon: Receipt },
-  { name: "340B duplicate discount", value: 1, color: "#8B5CF6", icon: ShieldAlert },
-  { name: "Formulary tier drift", value: 1, color: "#10B981", icon: Pill },
+  { name: "Client contract pricing variance", value: 6, color: "#FF612B", icon: DollarSign },
+  { name: "Duplicate client billing", value: 4, color: "#002677", icon: Receipt },
+  { name: "Revenue leakage / underbilling", value: 5, color: "#F59E0B", icon: TrendingDown },
+  { name: "Invoice amount spike", value: 4, color: "#0EA5E9", icon: TrendingUp },
+  { name: "Administrative fee mismatch", value: 3, color: "#8B5CF6", icon: Percent },
+  { name: "PMPM billing variance", value: 3, color: "#10B981", icon: GitCompare },
+  { name: "Billing outside contract dates", value: 2, color: "#EF4444", icon: ShieldAlert },
 ];
 
-const anomalies = [
+type Anomaly = {
+  id: string;
+  category: string;
+  tone: "danger" | "warning" | "info" | "draft" | "success";
+  icon: any;
+  clientName: string;
+  invoiceNumber: string;
+  billingPeriod: string;
+  businessUnit: string;
+  billingCategory: string;
+  expected: string;
+  actual: string;
+  variance: string;
+  revenueImpact: string;
+  severity: "Critical" | "High" | "Medium" | "Low";
+  confidence: number;
+  rootCause: string;
+  recommendedAction: string;
+  status: "Open" | "In Review" | "Escalated" | "Resolved";
+  analyst: string;
+};
+
+const anomalies: Anomaly[] = [
   {
-    id: "PBM-3391", type: "AWP pricing deviation", tone: "danger" as const, icon: DollarSign,
-    title: "Ingredient cost 22% above AWP-15% contracted rate",
-    client: "UnitedHealth Grp · OU Midwest Retail · NDC 00093-7146", when: "18 min ago",
-    metric: "$142.80 vs $117.05 allowed", severity: "High", confidence: 0.96,
+    id: "BIL-90412", category: "Client Contract Pricing Variance", tone: "danger", icon: DollarSign,
+    clientName: "UnitedHealth Group — Commercial", invoiceNumber: "INV-2026-08841",
+    billingPeriod: "Jun 2026", businessUnit: "PBM Client Billing — East",
+    billingCategory: "Per-Claim Administrative Fee",
+    expected: "$0.62 / claim", actual: "$0.78 / claim",
+    variance: "+$0.16 / claim", revenueImpact: "+$184,220 overbilled",
+    severity: "Critical", confidence: 0.97,
+    rootCause: "Rate card v3.2 loaded; contract references v3.1 pricing schedule.",
+    recommendedAction: "Hold invoice release · reload rate card v3.1 · issue credit memo if released.",
+    status: "Escalated", analyst: "P. Ramirez",
   },
   {
-    id: "PBM-3388", type: "Rebate variance", tone: "warning" as const, icon: Percent,
-    title: "Manufacturer rebate accrual short by 34% vs contracted guarantee",
-    client: "Elevance Health · Commercial Book · Q3 accrual", when: "1 h ago",
-    metric: "$2.14 PMPM vs $3.25 guarantee", severity: "High", confidence: 0.91,
+    id: "BIL-90408", category: "Duplicate Client Billing", tone: "danger", icon: Receipt,
+    clientName: "Elevance Health", invoiceNumber: "INV-2026-08829",
+    billingPeriod: "Jun 2026", businessUnit: "PBM Client Billing — Central",
+    billingCategory: "Implementation Fee",
+    expected: "$45,000 (one-time)", actual: "$90,000 (billed twice)",
+    variance: "+$45,000", revenueImpact: "+$45,000 duplicate charge",
+    severity: "High", confidence: 0.99,
+    rootCause: "Implementation milestone event fired twice from onboarding workflow.",
+    recommendedAction: "Reverse duplicate line · issue credit memo · patch onboarding event handler.",
+    status: "In Review", analyst: "S. Okafor",
   },
   {
-    id: "PBM-3384", type: "Claim reversal spike", tone: "warning" as const, icon: RotateCcw,
-    title: "Reversal rate 4.8× baseline for Medicare Part D group",
-    client: "Humana · MAPD Group 88231 · 24h window", when: "2 h ago",
-    metric: "38 reversals vs ~8 expected", severity: "Medium", confidence: 0.87,
+    id: "BIL-90397", category: "Revenue Leakage / Underbilling Risk", tone: "warning", icon: TrendingDown,
+    clientName: "Humana — MAPD", invoiceNumber: "INV-2026-08811",
+    billingPeriod: "Jun 2026", businessUnit: "Revenue Integrity",
+    billingCategory: "PMPM Administrative Fee",
+    expected: "412,880 eligible members", actual: "398,120 billed members",
+    variance: "-14,760 members", revenueImpact: "-$62,730 underbilled",
+    severity: "High", confidence: 0.93,
+    rootCause: "Eligibility feed truncated; new group HUM-MAPD-441 not mapped to billing entity.",
+    recommendedAction: "Re-run eligibility reconciliation · map group · rebill supplemental invoice.",
+    status: "Open", analyst: "J. Whitmore",
   },
   {
-    id: "PBM-3379", type: "340B duplicate discount", tone: "danger" as const, icon: ShieldAlert,
-    title: "340B claim also billed with manufacturer rebate (duplicate discount)",
-    client: "CVS Caremark · Covered entity CE-4421", when: "3 h ago",
-    metric: "12 claims · $8,940 exposure", severity: "High", confidence: 0.98,
+    id: "BIL-90385", category: "Invoice Amount Spike", tone: "warning", icon: TrendingUp,
+    clientName: "CVS Caremark — Commercial", invoiceNumber: "INV-2026-08802",
+    billingPeriod: "Jun 2026", businessUnit: "PBM Client Billing — West",
+    billingCategory: "Total Monthly Invoice",
+    expected: "$1.42M (12-mo avg)", actual: "$2.08M",
+    variance: "+46.5%", revenueImpact: "+$660K vs baseline",
+    severity: "High", confidence: 0.91,
+    rootCause: "Manual adjustment batch ADJ-7712 posted against wrong client contract.",
+    recommendedAction: "Reverse ADJ-7712 · reallocate to correct client · release corrected invoice.",
+    status: "In Review", analyst: "A. Nakamura",
   },
   {
-    id: "PBM-3372", type: "DIR fee mismatch", tone: "info" as const, icon: Receipt,
-    title: "Retro DIR fee assessed above ceiling on preferred pharmacy network",
-    client: "Cigna Express Scripts · OU Southeast", when: "5 h ago",
-    metric: "6.1% vs 4.5% cap", severity: "Medium", confidence: 0.83,
+    id: "BIL-90371", category: "Administrative Fee Mismatch", tone: "info", icon: Percent,
+    clientName: "Cigna", invoiceNumber: "INV-2026-08788",
+    billingPeriod: "Jun 2026", businessUnit: "Revenue Integrity",
+    billingCategory: "Rebate Admin Fee",
+    expected: "1.25% of rebate pass-through", actual: "1.85%",
+    variance: "+60 bps", revenueImpact: "+$28,410 overbilled",
+    severity: "Medium", confidence: 0.88,
+    rootCause: "Fee schedule not updated after contract amendment CA-2026-14.",
+    recommendedAction: "Apply amendment CA-2026-14 · recalculate · credit client.",
+    status: "Open", analyst: "M. Delacroix",
   },
   {
-    id: "PBM-3365", type: "Copay mismatch", tone: "draft" as const, icon: FileWarning,
-    title: "Member copay deviates from benefit plan tier design",
-    client: "BCBS FEP · Plan FEP-Std · Tier 2 generics", when: "7 h ago",
-    metric: "Avg $18 vs $10 tier design", severity: "Low", confidence: 0.79,
+    id: "BIL-90358", category: "Billing Outside Contract Effective Dates", tone: "danger", icon: ShieldAlert,
+    clientName: "BCBS Federal Employee Program", invoiceNumber: "INV-2026-08774",
+    billingPeriod: "Jun 2026", businessUnit: "Client Billing Operations",
+    billingCategory: "PMPM Administrative Fee",
+    expected: "Contract effective through May 31, 2026", actual: "Billed for full Jun 2026",
+    variance: "30 days beyond term", revenueImpact: "$91,200 exposed to dispute",
+    severity: "Critical", confidence: 0.98,
+    rootCause: "Contract renewal not booked; auto-renew flag disabled but billing job not gated.",
+    recommendedAction: "Suspend invoice · confirm renewal status · rebill under new contract or credit.",
+    status: "Escalated", analyst: "P. Ramirez",
   },
   {
-    id: "PBM-3358", type: "Formulary tier drift", tone: "draft" as const, icon: Pill,
-    title: "Non-formulary NDCs adjudicated at preferred tier pricing",
-    client: "Aetna · Commercial NPF formulary", when: "9 h ago",
-    metric: "27 NDCs · $12,410 impact", severity: "Medium", confidence: 0.85,
+    id: "BIL-90344", category: "PMPM Billing Variance", tone: "warning", icon: GitCompare,
+    clientName: "Aetna — Commercial", invoiceNumber: "INV-2026-08761",
+    billingPeriod: "Jun 2026", businessUnit: "PBM Client Billing — East",
+    billingCategory: "PMPM Fee",
+    expected: "$3.85 PMPM", actual: "$4.21 PMPM",
+    variance: "+$0.36 PMPM", revenueImpact: "+$142,880 overbilled",
+    severity: "High", confidence: 0.89,
+    rootCause: "Tier-2 pricing applied to Tier-1 book of business.",
+    recommendedAction: "Correct product mapping · reprice · issue credit memo.",
+    status: "In Review", analyst: "S. Okafor",
+  },
+  {
+    id: "BIL-90332", category: "Credit Memo Anomaly", tone: "draft", icon: RotateCcw,
+    clientName: "Molina Healthcare", invoiceNumber: "CM-2026-01192",
+    billingPeriod: "Jun 2026", businessUnit: "Finance — Revenue Assurance",
+    billingCategory: "Credit Memo",
+    expected: "~$8K avg credit memo", actual: "$74,500 credit",
+    variance: "+8.3× baseline", revenueImpact: "-$66,500 vs expected",
+    severity: "Medium", confidence: 0.84,
+    rootCause: "Bulk credit applied without dispute ticket reference.",
+    recommendedAction: "Attach supporting dispute · route through Finance approval workflow.",
+    status: "Open", analyst: "L. Bianchi",
+  },
+  {
+    id: "BIL-90318", category: "AI-Detected Outlier Pattern", tone: "info", icon: Sparkles,
+    clientName: "Centene — Ambetter", invoiceNumber: "INV-2026-08742",
+    billingPeriod: "Jun 2026", businessUnit: "Revenue Integrity",
+    billingCategory: "Composite (multi-line)",
+    expected: "Within 2σ of client pattern", actual: "4.6σ deviation across 3 fee categories",
+    variance: "Composite anomaly", revenueImpact: "$118K under review",
+    severity: "Medium", confidence: 0.82,
+    rootCause: "Correlated shifts in admin fee, PMPM, and rebate admin — likely mid-cycle rate reload.",
+    recommendedAction: "Compare rate cards · confirm effective date · validate with client success.",
+    status: "Open", analyst: "J. Whitmore",
   },
 ];
+
+const severityTone: Record<Anomaly["severity"], "danger" | "warning" | "info" | "neutral"> = {
+  Critical: "danger", High: "danger", Medium: "warning", Low: "info",
+};
+const statusTone: Record<Anomaly["status"], "warning" | "info" | "danger" | "success"> = {
+  Open: "warning", "In Review": "info", Escalated: "danger", Resolved: "success",
+};
 
 function AnomalySection() {
   return (
@@ -337,26 +433,28 @@ function AnomalySection() {
             <Sparkles className="size-4" />
           </span>
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">PBM Billing Anomalies</h2>
-            <p className="text-xs text-slate-500">ML-flagged deviations across US healthcare PBM billing — AWP/MAC pricing, rebates, DIR fees, 340B, reversals & formulary adherence.</p>
+            <h2 className="text-sm font-semibold text-slate-900">PBM Client Billing Anomalies</h2>
+            <p className="max-w-4xl text-xs text-slate-500">
+              AI continuously analyzes PBM client billing, invoice generation, contractual pricing, administrative fees, PMPM billing, adjustments, credits, and historical billing patterns to proactively identify revenue leakage, overbilling, underbilling, pricing deviations, reconciliation differences, and contract compliance issues before invoices are released.
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <StatusChip tone="info">HIPAA-scoped</StatusChip>
-          <StatusChip tone="warning">11 open</StatusChip>
-          <StatusChip tone="success">Model v2.4</StatusChip>
+          <StatusChip tone="info">Pre-release scan</StatusChip>
+          <StatusChip tone="warning">27 open</StatusChip>
+          <StatusChip tone="success">Model v3.1</StatusChip>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Panel title="Baseline vs actual" desc="Rx claims adjudicated per 2h · last 24h (dots = anomalies)" className="lg:col-span-2">
+        <Panel title="Invoice value — baseline vs actual" desc="Aggregate weekly invoice value ($M) · dots = anomalous billing periods" className="lg:col-span-2">
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={anomalyTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
                 <XAxis dataKey="t" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={40} />
-                <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `$${v}M`} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} formatter={(v: number) => `$${v}M`} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
                 <Line type="monotone" dataKey="baseline" stroke="#94a3b8" strokeDasharray="4 4" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="actual" stroke="#002677" strokeWidth={2} dot={false} />
@@ -368,7 +466,7 @@ function AnomalySection() {
           </div>
         </Panel>
 
-        <Panel title="Anomalies by type" desc="Last 24 hours">
+        <Panel title="Anomalies by category" desc="Last 30 days">
           <ul className="space-y-2">
             {anomalyMix.map((a) => {
               const Icon = a.icon;
@@ -392,41 +490,76 @@ function AnomalySection() {
         </Panel>
       </div>
 
-      <Panel title="Recent anomalies" desc="Ranked by severity and confidence">
-        <ul className="divide-y divide-slate-100">
-          {anomalies.map((a) => {
-            const Icon = a.icon;
-            return (
-              <li key={a.id} className="flex items-start justify-between gap-4 py-3">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 grid size-8 place-items-center rounded-md bg-slate-50 text-slate-600 ring-1 ring-slate-200">
-                    <Icon className="size-4" />
-                  </span>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs text-slate-500">{a.id}</span>
-                      <StatusChip tone={a.tone}>{a.type}</StatusChip>
-                      <span className="text-[11px] text-slate-500">Severity: <span className="font-semibold text-slate-700">{a.severity}</span></span>
-                      <span className="text-[11px] text-slate-500">Confidence: <span className="font-semibold text-slate-700">{Math.round(a.confidence * 100)}%</span></span>
-                    </div>
-                    <div className="mt-0.5 text-sm font-medium text-slate-900">{a.title}</div>
-                    <div className="text-xs text-slate-500">{a.client} · {a.when} · <span className="font-mono">{a.metric}</span></div>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  <button className="text-xs font-semibold text-slate-500 hover:text-slate-900">Dismiss</button>
-                  <button className="inline-flex items-center gap-1 text-xs font-semibold text-brand-primary hover:underline">
-                    Investigate <ArrowRight className="size-3" />
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+      <Panel title="Flagged billing anomalies" desc="Ranked by severity, revenue impact, and AI confidence">
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="thead-brand">
+              <tr>
+                <th className="th-brand px-3 py-2 text-left">Anomaly</th>
+                <th className="th-brand px-3 py-2 text-left">Client / Invoice</th>
+                <th className="th-brand px-3 py-2 text-left">Billing Category</th>
+                <th className="th-brand px-3 py-2 text-right">Expected</th>
+                <th className="th-brand px-3 py-2 text-right">Actual</th>
+                <th className="th-brand px-3 py-2 text-right">Revenue Impact</th>
+                <th className="th-brand px-3 py-2 text-left">Severity · Confidence</th>
+                <th className="th-brand px-3 py-2 text-left">Status · Analyst</th>
+                <th className="th-brand" />
+              </tr>
+            </thead>
+            <tbody>
+              {anomalies.map((a) => {
+                const Icon = a.icon;
+                return (
+                  <tr key={a.id} className="border-t border-slate-100 align-top hover:bg-slate-50/60">
+                    <td className="px-3 py-3">
+                      <div className="flex items-start gap-2">
+                        <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-md bg-slate-50 text-slate-600 ring-1 ring-slate-200">
+                          <Icon className="size-3.5" />
+                        </span>
+                        <div>
+                          <div className="font-mono text-[10px] text-slate-500">{a.id}</div>
+                          <div className="font-semibold text-slate-900">{a.category}</div>
+                          <div className="mt-1 max-w-xs text-[11px] text-slate-500"><span className="font-medium text-slate-600">Root cause:</span> {a.rootCause}</div>
+                          <div className="mt-0.5 max-w-xs text-[11px] text-slate-500"><span className="font-medium text-slate-600">Action:</span> {a.recommendedAction}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="font-medium text-slate-900">{a.clientName}</div>
+                      <div className="font-mono text-[11px] text-slate-500">{a.invoiceNumber}</div>
+                      <div className="text-[11px] text-slate-500">{a.billingPeriod} · {a.businessUnit}</div>
+                    </td>
+                    <td className="px-3 py-3 text-slate-700">{a.billingCategory}</td>
+                    <td className="px-3 py-3 text-right font-mono text-slate-700">{a.expected}</td>
+                    <td className="px-3 py-3 text-right font-mono text-slate-900">{a.actual}</td>
+                    <td className="px-3 py-3 text-right">
+                      <div className={cn("font-mono font-semibold", a.revenueImpact.startsWith("-") ? "text-rose-600" : "text-brand-primary")}>{a.revenueImpact}</div>
+                      <div className="font-mono text-[11px] text-slate-500">Δ {a.variance}</div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <StatusChip tone={severityTone[a.severity]}>{a.severity}</StatusChip>
+                      <div className="mt-1 text-[11px] text-slate-500">AI confidence <span className="font-semibold text-slate-700">{Math.round(a.confidence * 100)}%</span></div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <StatusChip tone={statusTone[a.status]}>{a.status}</StatusChip>
+                      <div className="mt-1 text-[11px] text-slate-500">{a.analyst}</div>
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <button className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-brand-primary hover:underline">
+                        Investigate <ArrowRight className="size-3" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </Panel>
     </div>
   );
 }
+
 
 // Silence unused-import warning when tree-shaken
 void PackageX;
