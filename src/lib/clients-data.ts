@@ -11,8 +11,20 @@ export interface Client {
   owner: string;
 }
 
+export interface BillingArrangement {
+  id: string;
+  name: string;
+  billingModel: string;
+  status: "Active" | "Inactive";
+  effectiveFrom: string;
+  effectiveTo: string;
+  contractIds: string[];
+  unitsLinked: number;
+}
+
 export interface Contract {
   id: string;
+  billingArrangementId: string;
   start: string;
   end: string;
   term: string;
@@ -45,7 +57,7 @@ export interface OperationalUnit {
   name: string;
   region: string;
   skuCount: number;
-  contractId: string;
+  billingArrangementId: string;
   effectiveFrom: string;
   effectiveTo: string;
   status: "Active" | "Inactive";
@@ -66,10 +78,17 @@ export const clients: Client[] = [
 
 export const contractsByClient: Record<string, Contract[]> = {
   aramex: [
-    { id: "CONT-2024-0012", start: "Jan 01, 2024", end: "Dec 31, 2024", term: "12 Months", status: "Active", source: "Direct Sales", basePricing: "Premium Global Tier", monthlyValue: "$1,200/mo", unitsLinked: 3 },
-    { id: "CONT-2023-0884", start: "Jan 01, 2023", end: "Dec 31, 2023", term: "12 Months", status: "Expired", source: "Partner Referral", basePricing: "Standard Tier", monthlyValue: "$950/mo", unitsLinked: 2 },
-    { id: "CONT-2022-0455", start: "Jan 01, 2022", end: "Dec 31, 2022", term: "12 Months", status: "Expired", source: "Direct Sales", basePricing: "Standard Tier", monthlyValue: "$800/mo", unitsLinked: 1 },
-    { id: "CONT-2025-0001", start: "Jan 01, 2025", end: "Dec 31, 2025", term: "12 Months", status: "Draft", source: "Renewal", basePricing: "Premium Global Tier", monthlyValue: "$1,350/mo", unitsLinked: 0 },
+    { id: "CONT-2024-0012", billingArrangementId: "BA-ARX-001", start: "Jan 01, 2024", end: "Dec 31, 2024", term: "12 Months", status: "Active", source: "Direct Sales", basePricing: "Premium Global Tier", monthlyValue: "$1,200/mo", unitsLinked: 3 },
+    { id: "CONT-2023-0884", billingArrangementId: "BA-ARX-001", start: "Jan 01, 2023", end: "Dec 31, 2023", term: "12 Months", status: "Expired", source: "Partner Referral", basePricing: "Standard Tier", monthlyValue: "$950/mo", unitsLinked: 2 },
+    { id: "CONT-2022-0455", billingArrangementId: "BA-ARX-001", start: "Jan 01, 2022", end: "Dec 31, 2022", term: "12 Months", status: "Expired", source: "Direct Sales", basePricing: "Standard Tier", monthlyValue: "$800/mo", unitsLinked: 1 },
+    { id: "CONT-2025-0001", billingArrangementId: "BA-ARX-001", start: "Jan 01, 2025", end: "Dec 31, 2025", term: "12 Months", status: "Draft", source: "Renewal", basePricing: "Premium Global Tier", monthlyValue: "$1,350/mo", unitsLinked: 0 },
+  ],
+};
+
+export const billingArrangementsByClient: Record<string, BillingArrangement[]> = {
+  aramex: [
+    { id: "BA-ARX-001", name: "Aramex Enterprise Billing", billingModel: "Consolidated monthly", status: "Active", effectiveFrom: "Jan 01, 2022", effectiveTo: "Dec 31, 2025", contractIds: ["CONT-2024-0012", "CONT-2023-0884", "CONT-2022-0455", "CONT-2025-0001"], unitsLinked: 3 },
+    { id: "BA-ARX-002", name: "Aramex Pilot Services", billingModel: "Usage-based", status: "Inactive", effectiveFrom: "Jan 01, 2023", effectiveTo: "Dec 31, 2023", contractIds: [], unitsLinked: 0 },
   ],
 };
 
@@ -85,7 +104,7 @@ export const operationalUnitsByClient: Record<string, OperationalUnit[]> = {
       name: "West Coast Fulfillment",
       region: "Pacific (CA, WA)",
       skuCount: 12,
-      contractId: "CONT-2024-0012",
+      billingArrangementId: "BA-ARX-001",
       effectiveFrom: "Jan 01, 2024",
       effectiveTo: "Dec 31, 2024",
       status: "Active",
@@ -102,7 +121,7 @@ export const operationalUnitsByClient: Record<string, OperationalUnit[]> = {
       name: "Texas Distribution Hub",
       region: "Central (TX)",
       skuCount: 8,
-      contractId: "CONT-2024-0012",
+      billingArrangementId: "BA-ARX-001",
       effectiveFrom: "Feb 01, 2024",
       effectiveTo: "Dec 31, 2024",
       status: "Active",
@@ -118,7 +137,7 @@ export const operationalUnitsByClient: Record<string, OperationalUnit[]> = {
       name: "Tri-State Courier Net",
       region: "Northeast (NY, NJ)",
       skuCount: 22,
-      contractId: "CONT-2024-0012",
+      billingArrangementId: "BA-ARX-001",
       effectiveFrom: "Apr 01, 2024",
       effectiveTo: "Dec 31, 2024",
       status: "Active",
