@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { FileText, Boxes, Tags, Link2, ArrowRight } from "lucide-react";
+import { FileText, Boxes, Tags, Link2, ArrowRight, CreditCard, RefreshCw, GitBranch } from "lucide-react";
 import { DataTable } from "@/components/DataTable";
 import { StatusChip, statusToTone } from "@/components/StatusChip";
 import { Input } from "@/components/ui/input";
@@ -10,10 +10,12 @@ import { ExpandedShell, FieldRow } from "@/components/ExpandedShell";
 import { AddEntityDialog, type FieldDef } from "@/components/AddEntityDialog";
 import { cn } from "@/lib/utils";
 import {
+  billingArrangementsByClient,
   contractsByClient,
   getClient,
   operationalUnitsByClient,
   type CagAssociation,
+  type BillingArrangement,
   type Contract,
   type OperationalUnit,
   type ProductPrice,
@@ -24,7 +26,7 @@ export const Route = createFileRoute("/clients/$clientId/configuration")({
   component: ClientConfiguration,
 });
 
-type TabKey = "contracts" | "units" | "pricing" | "cags";
+type TabKey = "arrangements" | "units" | "pricing" | "cags";
 
 function ClientConfiguration() {
   const { client } = Route.useLoaderData();
@@ -32,19 +34,20 @@ function ClientConfiguration() {
   if (!client) return null;
 
   const contracts = contractsByClient[client.id] ?? [];
+  const arrangements = billingArrangementsByClient[client.id] ?? [];
   const units = operationalUnitsByClient[client.id] ?? [];
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 pb-px">
-        <TabBtn k="contracts" cur={tab} set={setTab} icon={<FileText className="size-4" />} count={contracts.length}>Contracts</TabBtn>
+        <TabBtn k="arrangements" cur={tab} set={setTab} icon={<CreditCard className="size-4" />} count={arrangements.length}>Billing Arrangements</TabBtn>
         <TabBtn k="units" cur={tab} set={setTab} icon={<Boxes className="size-4" />} count={units.length}>Operational Units</TabBtn>
         <TabBtn k="pricing" cur={tab} set={setTab} icon={<Tags className="size-4" />}>Pricing Models</TabBtn>
         <TabBtn k="cags" cur={tab} set={setTab} icon={<Link2 className="size-4" />}>CAG Associations</TabBtn>
       </div>
 
-      {tab === "contracts" && <ContractsTab contracts={contracts} units={units} />}
-      {tab === "units" && <UnitsTab units={units} contracts={contracts} />}
+      {tab === "arrangements" && <BillingArrangementsTab arrangements={arrangements} contracts={contracts} units={units} />}
+      {tab === "units" && <UnitsTab units={units} arrangements={arrangements} />}
       {tab === "pricing" && <PricingTab units={units} contracts={contracts} />}
       {tab === "cags" && <CagsTab units={units} />}
     </div>
