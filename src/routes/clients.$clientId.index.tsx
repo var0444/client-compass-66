@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { contractsByClient, dashboardMetrics, getClient, operationalUnitsByClient } from "@/lib/clients-data";
+import { billingArrangementsByClient, contractsByClient, dashboardMetrics, getClient, operationalUnitsByClient } from "@/lib/clients-data";
 import { StatusChip } from "@/components/StatusChip";
 
 export const Route = createFileRoute("/clients/$clientId/")({
@@ -26,6 +26,7 @@ function ClientDashboard() {
   const { client } = Route.useLoaderData();
   if (!client) return null;
   const contracts = contractsByClient[client.id] ?? [];
+  const arrangements = billingArrangementsByClient[client.id] ?? [];
   const units = operationalUnitsByClient[client.id] ?? [];
   const activeContract = contracts.find((c) => c.status === "Active");
 
@@ -68,12 +69,12 @@ function ClientDashboard() {
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-900">Active Contract</h3>
+          <h3 className="text-sm font-semibold text-slate-900">Active Billing Arrangement</h3>
           {activeContract ? (
             <div className="mt-3 space-y-3 text-sm">
-              <div className="font-mono text-xs text-slate-500">{activeContract.id}</div>
+              <div className="font-mono text-xs text-slate-500">{arrangements.find((a) => a.id === activeContract.billingArrangementId)?.id ?? activeContract.billingArrangementId}</div>
               <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <div className="text-xs text-slate-500">{activeContract.basePricing}</div>
+                <div className="text-xs text-slate-500">{activeContract.basePricing} · {activeContract.id}</div>
                 <div className="mt-0.5 text-lg font-bold text-brand-secondary">{activeContract.monthlyValue}</div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">

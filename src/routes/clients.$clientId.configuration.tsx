@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { FileText, Boxes, Tags, Link2, ArrowRight, CreditCard, RefreshCw, GitBranch } from "lucide-react";
+import { Boxes, Tags, Link2, ArrowRight, CreditCard, RefreshCw, GitBranch } from "lucide-react";
 import { DataTable } from "@/components/DataTable";
 import { StatusChip, statusToTone } from "@/components/StatusChip";
 import { Input } from "@/components/ui/input";
@@ -220,7 +220,7 @@ function UnitsTab({ units, arrangements }: { units: OperationalUnit[]; arrangeme
                   <div>
                     <FieldRow label="Name">{u.name}</FieldRow>
                     <FieldRow label="Region">{u.region}</FieldRow>
-                    <FieldRow label="Contract"><span className="font-mono text-xs">{u.contractId}</span></FieldRow>
+                    <FieldRow label="Billing Arrangement"><span className="font-mono text-xs">{u.billingArrangementId}</span></FieldRow>
                     <FieldRow label="Effective"><>{u.effectiveFrom} → {u.effectiveTo}</></FieldRow>
                   </div>
                 ),
