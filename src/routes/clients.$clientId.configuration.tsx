@@ -30,7 +30,7 @@ type TabKey = "arrangements" | "units" | "pricing" | "cags";
 
 function ClientConfiguration() {
   const { client } = Route.useLoaderData();
-  const [tab, setTab] = useState<TabKey>("contracts");
+  const [tab, setTab] = useState<TabKey>("arrangements");
   if (!client) return null;
 
   const contracts = contractsByClient[client.id] ?? [];
@@ -79,126 +79,72 @@ function TabBtn({
   );
 }
 
-/* -------------------- Contracts -------------------- */
+/* -------------------- Billing Arrangements -------------------- */
 
-const cHelper = createColumnHelper<Contract>();
+const baHelper = createColumnHelper<BillingArrangement>();
 
-function ContractsTab({ contracts, units }: { contracts: Contract[]; units: OperationalUnit[] }) {
-  const [openAdd, setOpenAdd] = useState(false);
+function BillingArrangementsTab({ arrangements, contracts, units }: { arrangements: BillingArrangement[]; contracts: Contract[]; units: OperationalUnit[] }) {
+  const [flow, setFlow] = useState<"new" | "renew" | "amend" | "access" | null>(null);
   const columns = useMemo(() => [
-    cHelper.accessor("id", { header: "Contract", cell: (i) => <span className="font-mono text-xs font-semibold text-slate-900">{i.getValue()}</span> }),
-    cHelper.accessor("basePricing", { header: "Base Pricing", cell: (i) => <span className="text-sm text-slate-700">{i.getValue()}</span> }),
-    cHelper.accessor("monthlyValue", { header: "Monthly Value", cell: (i) => <span className="text-sm font-semibold text-slate-900">{i.getValue()}</span> }),
-    cHelper.accessor("start", { header: "Effective Range", cell: (i) => <span className="text-sm text-slate-600">{i.getValue()} → {i.row.original.end}</span> }),
-    cHelper.accessor("unitsLinked", { header: "Units Linked", cell: (i) => <span className="text-sm text-slate-600">{i.getValue()} OUs</span> }),
-    cHelper.accessor("status", { header: "Status", cell: (i) => <StatusChip tone={statusToTone(i.getValue())}>{i.getValue()}</StatusChip> }),
+    baHelper.accessor("id", { header: "Billing Arrangement", cell: (i) => <div><div className="font-mono text-xs font-semibold text-slate-900">{i.getValue()}</div><div className="text-sm text-slate-700">{i.row.original.name}</div></div> }),
+    baHelper.accessor("billingModel", { header: "Billing Model", cell: (i) => <span className="text-sm text-slate-700">{i.getValue()}</span> }),
+    baHelper.accessor("contractIds", { header: "Contracts", cell: (i) => <span className="text-sm text-slate-600">{i.getValue().length} versions</span> }),
+    baHelper.accessor("unitsLinked", { header: "OUs Linked", cell: (i) => <span className="text-sm text-slate-600">{i.getValue()} OUs</span> }),
+    baHelper.accessor("effectiveFrom", { header: "Effective Range", cell: (i) => <span className="text-sm text-slate-600">{i.getValue()} → {i.row.original.effectiveTo}</span> }),
+    baHelper.accessor("status", { header: "Status", cell: (i) => <StatusChip tone={statusToTone(i.getValue())}>{i.getValue()}</StatusChip> }),
   ], []);
+  const currentContracts = contracts.filter((c) => c.status === "Active" || c.status === "Draft");
+  const arrangementOptions = arrangements.map((a) => ({ value: a.id, label: `${a.id} · ${a.name}` }));
+  const contractOptions = currentContracts.map((c) => ({ value: c.id, label: `${c.id} · ${c.status}` }));
 
-  const fields: FieldDef[] = [
-    { type: "text", key: "id", label: "Contract ID", placeholder: "CONT-2025-0010", required: true },
-    { type: "select", key: "source", label: "Source", options: [
-      { value: "direct", label: "Direct Sales" }, { value: "partner", label: "Partner Referral" }, { value: "renewal", label: "Renewal" },
-    ]},
-    { type: "date", key: "start", label: "Start Date", required: true },
-    { type: "date", key: "end", label: "End Date", required: true },
-    { type: "select", key: "basePricing", label: "Base Pricing Plan", options: [
-      { value: "premium", label: "Premium Global Tier" }, { value: "standard", label: "Standard Tier" }, { value: "custom", label: "Custom Tier" },
-    ], full: true },
-    { type: "text", key: "monthlyValue", label: "Monthly Value", placeholder: "$1,200" },
-    { type: "text", key: "term", label: "Term", placeholder: "12 Months" },
-    { type: "multiselect", key: "linkedUnits", label: "Link Operational Units",
-      options: units.map((u) => ({ value: u.id, label: `${u.name} (${u.id})` })), full: true },
-    { type: "switch", key: "activate", label: "Set as Active contract (deactivates current active)", full: true },
-    { type: "textarea", key: "notes", label: "Notes", placeholder: "Internal notes…", full: true },
+  const flowConfig = {
+    new: { title: "New Contract & Billing Arrangement", description: "Create a new arrangement when a contract introduces a distinct OU billing relationship.", submitLabel: "Create Arrangement" },
+    renew: { title: "Renew Contract", description: "Create the next contract version while preserving the Billing Arrangement ID and OU links.", submitLabel: "Create Renewal" },
+    amend: { title: "Amend Contract", description: "Record a contract amendment under the same Billing Arrangement without breaking downstream OU mappings.", submitLabel: "Create Amendment" },
+    access: { title: "Manage Arrangement Access", description: "Give billing, finance, and client operations users scoped access to this arrangement.", submitLabel: "Save Access" },
+  } as const;
+
+  const fields: FieldDef[] = flow === "new" ? [
+    { type: "text", key: "arrangementId", label: "Billing Arrangement ID", placeholder: "BA-ARX-003", required: true },
+    { type: "text", key: "name", label: "Arrangement name", placeholder: "Aramex Regional Billing", required: true },
+    { type: "select", key: "billingModel", label: "Billing model", options: [{ value: "consolidated", label: "Consolidated monthly" }, { value: "usage", label: "Usage-based" }, { value: "hybrid", label: "Hybrid" }] },
+    { type: "multiselect", key: "linkedUnits", label: "Link operational units", options: units.map((u) => ({ value: u.id, label: `${u.name} (${u.id})` })), full: true },
+    { type: "text", key: "contractId", label: "First contract ID", placeholder: "CONT-2026-0001", required: true },
+    { type: "date", key: "start", label: "Contract start", required: true },
+    { type: "date", key: "end", label: "Contract end", required: true },
+  ] : flow === "access" ? [
+    { type: "multiselect", key: "users", label: "Users and groups", options: [{ value: "billing", label: "Client Billing Operations" }, { value: "finance", label: "Finance & Revenue Integrity" }, { value: "analyst", label: "Billing Analysts" }, { value: "owner", label: "Client Account Owners" }], full: true },
+    { type: "select", key: "role", label: "Permission level", options: [{ value: "view", label: "View and investigate" }, { value: "edit", label: "Edit contracts and OU links" }, { value: "admin", label: "Manage access and billing setup" }] },
+    { type: "switch", key: "notify", label: "Notify users about access changes", full: true, defaultValue: true },
+  ] : [
+    { type: "select", key: "arrangementId", label: "Billing Arrangement", options: arrangementOptions, required: true, full: true },
+    { type: "select", key: "contractId", label: "Source contract", options: contractOptions, required: true },
+    { type: "text", key: "newContractId", label: "New contract ID", placeholder: "CONT-2026-0002", required: true },
+    { type: "date", key: "start", label: "Effective from", required: true },
+    { type: "date", key: "end", label: "Effective to", required: true },
+    { type: "text", key: "monthlyValue", label: flow === "amend" ? "Amended monthly value" : "Renewal monthly value", placeholder: "$1,350/mo" },
+    ...(flow === "amend" ? [{ type: "textarea" as const, key: "reason", label: "Amendment reason", placeholder: "Describe the commercial or scope change…", full: true }] : []),
   ];
 
   return (
     <div className="space-y-4">
-      <SectionHeader
-        title="Contracts"
-        desc="Multiple contracts allowed. Only one is Active at any time. Expand a row to view details and edit inline."
-        action={<Button size="sm" onClick={() => setOpenAdd(true)} className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ Add Contract</Button>}
-      />
-      <DataTable
-        data={contracts}
-        columns={columns}
-        searchPlaceholder="Search contracts…"
-        emptyMessage="No contracts on file."
-        renderExpanded={(c) => {
-          const linked = units.filter((u) => u.contractId === c.id);
-          return (
-            <ExpandedShell
-              sections={[
-                {
-                  id: "overview",
-                  title: "Contract overview",
-                  description: "Top-level identifiers and term.",
-                  view: (
-                    <div>
-                      <FieldRow label="Contract ID"><span className="font-mono text-xs">{c.id}</span></FieldRow>
-                      <FieldRow label="Source">{c.source}</FieldRow>
-                      <FieldRow label="Term">{c.term}</FieldRow>
-                      <FieldRow label="Status"><StatusChip tone={statusToTone(c.status)}>{c.status}</StatusChip></FieldRow>
-                    </div>
-                  ),
-                  edit: (
-                    <div className="grid grid-cols-2 gap-3">
-                      <FieldLabel label="Source"><Input defaultValue={c.source} /></FieldLabel>
-                      <FieldLabel label="Term"><Input defaultValue={c.term} /></FieldLabel>
-                      <FieldLabel label="Start"><Input type="date" /></FieldLabel>
-                      <FieldLabel label="End"><Input type="date" /></FieldLabel>
-                    </div>
-                  ),
-                },
-                {
-                  id: "pricing",
-                  title: "Pricing & value",
-                  description: "Base pricing plan and contract value.",
-                  view: (
-                    <div>
-                      <FieldRow label="Base Pricing">{c.basePricing}</FieldRow>
-                      <FieldRow label="Monthly Value"><span className="font-semibold">{c.monthlyValue}</span></FieldRow>
-                      <FieldRow label="Effective From">{c.start}</FieldRow>
-                      <FieldRow label="Effective To">{c.end}</FieldRow>
-                    </div>
-                  ),
-                  edit: (
-                    <div className="grid grid-cols-2 gap-3">
-                      <FieldLabel label="Base Pricing"><Input defaultValue={c.basePricing} /></FieldLabel>
-                      <FieldLabel label="Monthly Value"><Input defaultValue={c.monthlyValue} /></FieldLabel>
-                    </div>
-                  ),
-                },
-                {
-                  id: "linked",
-                  title: `Linked operational units (${linked.length})`,
-                  description: "Units inheriting this contract's base pricing.",
-                  view: linked.length === 0 ? (
-                    <p className="text-sm text-slate-500">No units linked yet.</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {linked.map((u) => (
-                        <li key={u.id} className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2 text-sm">
-                          <div>
-                            <div className="font-medium text-slate-900">{u.name}</div>
-                            <div className="font-mono text-[11px] text-slate-400">{u.id} · {u.region}</div>
-                          </div>
-                          <StatusChip tone={statusToTone(u.status)}>{u.status}</StatusChip>
-                        </li>
-                      ))}
-                    </ul>
-                  ),
-                },
-              ]}
-            />
-          );
-        }}
-      />
-      <AddEntityDialog
-        open={openAdd} onOpenChange={setOpenAdd}
-        title="Add Contract" description="Create a new contract for this client."
-        fields={fields} submitLabel="Create Contract"
-      />
+      <SectionHeader title="Billing Arrangements" desc="Stable billing relationships that group contract versions and operational units. Renewals and amendments retain the arrangement ID." action={<div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => setFlow("access")}><Link2 className="mr-1.5 size-3.5" />Manage access</Button><Button size="sm" onClick={() => setFlow("new")} className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ New arrangement</Button></div>} />
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <LayerCard tone="info" label="Stable relationship" title={`${arrangements.length} arrangements`} sub="IDs remain through renewals" footer="OUs link to the arrangement, not a single contract version." />
+        <LayerCard tone="warning" label="Contract lifecycle" title={`${contracts.length} contract versions`} sub="Renew or amend in context" footer="History stays grouped for audit and billing operations." />
+        <LayerCard tone="success" label="Access scope" title="4 user groups" sub="Billing · Finance · Operations" footer="Permissions can be managed per arrangement." />
+      </div>
+      <DataTable data={arrangements} columns={columns} searchPlaceholder="Search arrangements…" emptyMessage="No billing arrangements yet." renderExpanded={(a) => {
+        const arrangementContracts = contracts.filter((c) => a.contractIds.includes(c.id));
+        const linked = units.filter((u) => u.billingArrangementId === a.id);
+        return <ExpandedShell sections={[
+          { id: "identity", title: "Arrangement overview", description: "The stable billing relationship shared by contract versions and OUs.", view: <div><FieldRow label="Arrangement ID"><span className="font-mono text-xs">{a.id}</span></FieldRow><FieldRow label="Name">{a.name}</FieldRow><FieldRow label="Billing model">{a.billingModel}</FieldRow><FieldRow label="Effective range">{a.effectiveFrom} → {a.effectiveTo}</FieldRow></div>, edit: <div className="grid grid-cols-2 gap-3"><FieldLabel label="Arrangement name"><Input defaultValue={a.name} /></FieldLabel><FieldLabel label="Billing model"><Input defaultValue={a.billingModel} /></FieldLabel></div> },
+          { id: "contracts", title: `Contract lifecycle (${arrangementContracts.length})`, description: "Renewal and amendment actions create new versions under this same arrangement.", view: <div className="space-y-2">{arrangementContracts.map((c) => <div key={c.id} className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2"><div><div className="font-mono text-xs font-semibold text-slate-900">{c.id}</div><div className="text-xs text-slate-500">{c.start} → {c.end} · {c.monthlyValue}</div></div><StatusChip tone={statusToTone(c.status)}>{c.status}</StatusChip></div>)}</div>, edit: <div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => setFlow("renew")}><RefreshCw className="mr-1.5 size-3.5" />Renew contract</Button><Button size="sm" variant="outline" onClick={() => setFlow("amend")}><GitBranch className="mr-1.5 size-3.5" />Amend contract</Button></div> },
+          { id: "units", title: `Linked operational units (${linked.length})`, description: "These OUs inherit the arrangement's active contract and pricing relationship.", view: linked.length === 0 ? <p className="text-sm text-slate-500">No units linked yet.</p> : <ul className="space-y-2">{linked.map((u) => <li key={u.id} className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2 text-sm"><div><div className="font-medium text-slate-900">{u.name}</div><div className="font-mono text-[11px] text-slate-400">{u.id} · {u.region}</div></div><StatusChip tone={statusToTone(u.status)}>{u.status}</StatusChip></li>)}</ul> },
+          { id: "access", title: "Access and responsibilities", description: "Scoped access for teams that review or maintain this arrangement.", view: <div className="flex flex-wrap gap-2"><StatusChip tone="info">Client Billing Operations</StatusChip><StatusChip tone="info">Finance & Revenue Integrity</StatusChip><StatusChip tone="neutral">Client Account Owners</StatusChip></div> },
+        ]} />;
+      }} />
+      {flow && <AddEntityDialog open={flow !== null} onOpenChange={(open) => !open && setFlow(null)} title={flowConfig[flow].title} description={flowConfig[flow].description} fields={fields} submitLabel={flowConfig[flow].submitLabel} onSubmit={() => setFlow(null)} />}
     </div>
   );
 }
@@ -207,7 +153,7 @@ function ContractsTab({ contracts, units }: { contracts: Contract[]; units: Oper
 
 const uHelper = createColumnHelper<OperationalUnit>();
 
-function UnitsTab({ units, contracts }: { units: OperationalUnit[]; contracts: Contract[] }) {
+function UnitsTab({ units, arrangements }: { units: OperationalUnit[]; arrangements: BillingArrangement[] }) {
   const [openAdd, setOpenAdd] = useState(false);
   const [openCustom, setOpenCustom] = useState(false);
   const columns = useMemo(() => [
@@ -221,7 +167,7 @@ function UnitsTab({ units, contracts }: { units: OperationalUnit[]; contracts: C
       ),
     }),
     uHelper.accessor("region", { header: "Region", cell: (i) => <span className="text-sm text-slate-600">{i.getValue()}</span> }),
-    uHelper.accessor("contractId", { header: "Contract", cell: (i) => <span className="font-mono text-xs text-slate-700">{i.getValue()}</span> }),
+    uHelper.accessor("billingArrangementId", { header: "Billing Arrangement", cell: (i) => <span className="font-mono text-xs text-slate-700">{i.getValue()}</span> }),
     uHelper.accessor("skuCount", { header: "Products", cell: (i) => <span className="text-sm text-slate-700">{i.getValue()} SKUs</span> }),
     uHelper.accessor("pricingOverride", {
       header: "Pricing",
@@ -240,7 +186,7 @@ function UnitsTab({ units, contracts }: { units: OperationalUnit[]; contracts: C
     { type: "select", key: "region", label: "Region", options: [
       { value: "pacific", label: "Pacific (CA, WA)" }, { value: "central", label: "Central (TX)" }, { value: "northeast", label: "Northeast (NY, NJ)" }, { value: "southeast", label: "Southeast (FL, GA)" },
     ]},
-    { type: "select", key: "contractId", label: "Linked Contract", options: contracts.map((c) => ({ value: c.id, label: `${c.id} · ${c.status}` }))},
+    { type: "select", key: "billingArrangementId", label: "Billing Arrangement", options: arrangements.map((a) => ({ value: a.id, label: `${a.id} · ${a.name}` }))},
     { type: "date", key: "effectiveFrom", label: "Effective From", required: true },
     { type: "date", key: "effectiveTo", label: "Effective To" },
     { type: "select", key: "overrideType", label: "Pricing Override", options: [
@@ -331,7 +277,7 @@ function UnitsTab({ units, contracts }: { units: OperationalUnit[]; contracts: C
 
       <AddEntityDialog
         open={openAdd} onOpenChange={setOpenAdd}
-        title="Add Operational Unit" description="Create a sub-client operational unit linked to a contract."
+         title="Add Operational Unit" description="Create a sub-client operational unit linked to a billing arrangement."
         fields={fields} submitLabel="Create Unit"
       />
       <AddEntityDialog
