@@ -84,7 +84,7 @@ function TabBtn({
 const baHelper = createColumnHelper<BillingArrangement>();
 
 function BillingArrangementsTab({ arrangements, contracts, units }: { arrangements: BillingArrangement[]; contracts: Contract[]; units: OperationalUnit[] }) {
-  const [flow, setFlow] = useState<"new" | "renew" | "amend" | "access" | null>(null);
+  const [flow, setFlow] = useState<"new" | "renew" | "amend" | null>(null);
   const columns = useMemo(() => [
     baHelper.accessor("id", { header: "Billing Arrangement", cell: (i) => <div><div className="font-mono text-xs font-semibold text-slate-900">{i.getValue()}</div><div className="text-sm text-slate-700">{i.row.original.name}</div></div> }),
     baHelper.accessor("billingModel", { header: "Billing Model", cell: (i) => <span className="text-sm text-slate-700">{i.getValue()}</span> }),
@@ -101,7 +101,6 @@ function BillingArrangementsTab({ arrangements, contracts, units }: { arrangemen
     new: { title: "New Contract & Billing Arrangement", description: "Create a new arrangement when a contract introduces a distinct OU billing relationship.", submitLabel: "Create Arrangement" },
     renew: { title: "Renew Contract", description: "Create the next contract version while preserving the Billing Arrangement ID and OU links.", submitLabel: "Create Renewal" },
     amend: { title: "Amend Contract", description: "Record a contract amendment under the same Billing Arrangement without breaking downstream OU mappings.", submitLabel: "Create Amendment" },
-    access: { title: "Manage Arrangement Access", description: "Give billing, finance, and client operations users scoped access to this arrangement.", submitLabel: "Save Access" },
   } as const;
 
   const fields: FieldDef[] = flow === "new" ? [
@@ -112,10 +111,6 @@ function BillingArrangementsTab({ arrangements, contracts, units }: { arrangemen
     { type: "text", key: "contractId", label: "First contract ID", placeholder: "CONT-2026-0001", required: true },
     { type: "date", key: "start", label: "Contract start", required: true },
     { type: "date", key: "end", label: "Contract end", required: true },
-  ] : flow === "access" ? [
-    { type: "multiselect", key: "users", label: "Users and groups", options: [{ value: "billing", label: "Client Billing Operations" }, { value: "finance", label: "Finance & Revenue Integrity" }, { value: "analyst", label: "Billing Analysts" }, { value: "owner", label: "Client Account Owners" }], full: true },
-    { type: "select", key: "role", label: "Permission level", options: [{ value: "view", label: "View and investigate" }, { value: "edit", label: "Edit contracts and OU links" }, { value: "admin", label: "Manage access and billing setup" }] },
-    { type: "switch", key: "notify", label: "Notify users about access changes", full: true, defaultValue: true },
   ] : [
     { type: "select", key: "arrangementId", label: "Billing Arrangement", options: arrangementOptions, required: true, full: true },
     { type: "select", key: "contractId", label: "Source contract", options: contractOptions, required: true },
@@ -128,11 +123,10 @@ function BillingArrangementsTab({ arrangements, contracts, units }: { arrangemen
 
   return (
     <div className="space-y-4">
-      <SectionHeader title="Billing Arrangements" desc="Stable billing relationships that group contract versions and operational units. Renewals and amendments retain the arrangement ID." action={<div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => setFlow("access")}><Link2 className="mr-1.5 size-3.5" />Manage access</Button><Button size="sm" onClick={() => setFlow("new")} className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ New arrangement</Button></div>} />
+      <SectionHeader title="Billing Arrangements" desc="Stable billing relationships that group contract versions and operational units. Renewals and amendments retain the arrangement ID." action={<Button size="sm" onClick={() => setFlow("new")} className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ New arrangement</Button>} />
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <LayerCard tone="info" label="Stable relationship" title={`${arrangements.length} arrangements`} sub="IDs remain through renewals" footer="OUs link to the arrangement, not a single contract version." />
         <LayerCard tone="warning" label="Contract lifecycle" title={`${contracts.length} contract versions`} sub="Renew or amend in context" footer="History stays grouped for audit and billing operations." />
-        <LayerCard tone="success" label="Access scope" title="4 user groups" sub="Billing · Finance · Operations" footer="Permissions can be managed per arrangement." />
       </div>
       <DataTable data={arrangements} columns={columns} searchPlaceholder="Search arrangements…" emptyMessage="No billing arrangements yet." renderExpanded={(a) => {
         const arrangementContracts = contracts.filter((c) => a.contractIds.includes(c.id));
@@ -141,7 +135,6 @@ function BillingArrangementsTab({ arrangements, contracts, units }: { arrangemen
           { id: "identity", title: "Arrangement overview", description: "The stable billing relationship shared by contract versions and OUs.", view: <div><FieldRow label="Arrangement ID"><span className="font-mono text-xs">{a.id}</span></FieldRow><FieldRow label="Name">{a.name}</FieldRow><FieldRow label="Billing model">{a.billingModel}</FieldRow><FieldRow label="Effective range">{a.effectiveFrom} → {a.effectiveTo}</FieldRow></div>, edit: <div className="grid grid-cols-2 gap-3"><FieldLabel label="Arrangement name"><Input defaultValue={a.name} /></FieldLabel><FieldLabel label="Billing model"><Input defaultValue={a.billingModel} /></FieldLabel></div> },
           { id: "contracts", title: `Contract lifecycle (${arrangementContracts.length})`, description: "Renewal and amendment actions create new versions under this same arrangement.", view: <div className="space-y-2">{arrangementContracts.map((c) => <div key={c.id} className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2"><div><div className="font-mono text-xs font-semibold text-slate-900">{c.id}</div><div className="text-xs text-slate-500">{c.start} → {c.end} · {c.monthlyValue}</div></div><StatusChip tone={statusToTone(c.status)}>{c.status}</StatusChip></div>)}</div>, edit: <div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => setFlow("renew")}><RefreshCw className="mr-1.5 size-3.5" />Renew contract</Button><Button size="sm" variant="outline" onClick={() => setFlow("amend")}><GitBranch className="mr-1.5 size-3.5" />Amend contract</Button></div> },
           { id: "units", title: `Linked operational units (${linked.length})`, description: "These OUs inherit the arrangement's active contract and pricing relationship.", view: linked.length === 0 ? <p className="text-sm text-slate-500">No units linked yet.</p> : <ul className="space-y-2">{linked.map((u) => <li key={u.id} className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2 text-sm"><div><div className="font-medium text-slate-900">{u.name}</div><div className="font-mono text-[11px] text-slate-400">{u.id} · {u.region}</div></div><StatusChip tone={statusToTone(u.status)}>{u.status}</StatusChip></li>)}</ul> },
-          { id: "access", title: "Access and responsibilities", description: "Scoped access for teams that review or maintain this arrangement.", view: <div className="flex flex-wrap gap-2"><StatusChip tone="info">Client Billing Operations</StatusChip><StatusChip tone="info">Finance & Revenue Integrity</StatusChip><StatusChip tone="neutral">Client Account Owners</StatusChip></div> },
         ]} />;
       }} />
       {flow && <AddEntityDialog open={flow !== null} onOpenChange={(open) => !open && setFlow(null)} title={flowConfig[flow].title} description={flowConfig[flow].description} fields={fields} submitLabel={flowConfig[flow].submitLabel} onSubmit={() => setFlow(null)} />}
