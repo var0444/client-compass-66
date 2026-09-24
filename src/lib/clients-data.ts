@@ -50,6 +50,7 @@ export interface CagAssociation {
   effectiveFrom: string;
   effectiveTo: string;
   status: "Active" | "Inactive";
+  pricingOverrides?: { productName: string; adjusted: string }[];
 }
 
 export interface OperationalUnit {
@@ -93,8 +94,8 @@ export const billingArrangementsByClient: Record<string, BillingArrangement[]> =
 };
 
 const sampleCags: CagAssociation[] = [
-  { id: "CAG-001", carrier: "FedEx", account: "ACC-77821", group: "Domestic Ground", effectiveFrom: "Jan 01, 2024", effectiveTo: "Dec 31, 2024", status: "Active" },
-  { id: "CAG-002", carrier: "UPS", account: "ACC-43219", group: "International Air", effectiveFrom: "Mar 15, 2024", effectiveTo: "Dec 31, 2025", status: "Active" },
+  { id: "CAG-001", carrier: "FedEx", account: "ACC-77821", group: "Domestic Ground", effectiveFrom: "Jan 01, 2024", effectiveTo: "Dec 31, 2024", status: "Active", pricingOverrides: [{ productName: "Last-Mile Delivery Pro", adjusted: "$4.05" }] },
+  { id: "CAG-002", carrier: "UPS", account: "ACC-43219", group: "International Air", effectiveFrom: "Mar 15, 2024", effectiveTo: "Dec 31, 2025", status: "Active", pricingOverrides: [{ productName: "Real-time Tracking API", adjusted: "$0.62" }] },
 ];
 
 export const operationalUnitsByClient: Record<string, OperationalUnit[]> = {
