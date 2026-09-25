@@ -33,6 +33,13 @@ export interface Contract {
   basePricing: string;
   monthlyValue: string;
   unitsLinked: number;
+  productPrices?: ContractProductPrice[];
+}
+
+export interface ContractProductPrice {
+  productName: string;
+  model: string;
+  price: string;
 }
 
 export interface ProductPrice {
@@ -50,6 +57,7 @@ export interface CagAssociation {
   effectiveFrom: string;
   effectiveTo: string;
   status: "Active" | "Inactive";
+  scopeLevel?: "carrier" | "account" | "group";
   pricingOverrides?: { productName: string; adjusted: string }[];
 }
 
@@ -79,7 +87,14 @@ export const clients: Client[] = [
 
 export const contractsByClient: Record<string, Contract[]> = {
   aramex: [
-    { id: "CONT-2024-0012", billingArrangementId: "BA-ARX-001", start: "Jan 01, 2024", end: "Dec 31, 2024", term: "12 Months", status: "Active", source: "Direct Sales", basePricing: "Premium Global Tier", monthlyValue: "$1,200/mo", unitsLinked: 3 },
+    { id: "CONT-2024-0012", billingArrangementId: "BA-ARX-001", start: "Jan 01, 2024", end: "Dec 31, 2024", term: "12 Months", status: "Active", source: "Direct Sales", basePricing: "Premium Global Tier", monthlyValue: "$1,200/mo", unitsLinked: 3, productPrices: [
+      { productName: "Last-Mile Delivery Pro", model: "Per Transaction", price: "$4.50" },
+      { productName: "Warehouse Management", model: "Seat / Month", price: "$120.00" },
+      { productName: "Real-time Tracking API", model: "Per 1K Calls", price: "$0.80" },
+      { productName: "Freight Core SaaS", model: "Monthly", price: "$2,400.00" },
+      { productName: "Custom Labeling Module", model: "Per Label", price: "$0.05" },
+      { productName: "Claims Reconciliation", model: "Per Claim", price: "$1.20" },
+    ] },
     { id: "CONT-2023-0884", billingArrangementId: "BA-ARX-001", start: "Jan 01, 2023", end: "Dec 31, 2023", term: "12 Months", status: "Expired", source: "Partner Referral", basePricing: "Standard Tier", monthlyValue: "$950/mo", unitsLinked: 2 },
     { id: "CONT-2022-0455", billingArrangementId: "BA-ARX-001", start: "Jan 01, 2022", end: "Dec 31, 2022", term: "12 Months", status: "Expired", source: "Direct Sales", basePricing: "Standard Tier", monthlyValue: "$800/mo", unitsLinked: 1 },
     { id: "CONT-2025-0001", billingArrangementId: "BA-ARX-001", start: "Jan 01, 2025", end: "Dec 31, 2025", term: "12 Months", status: "Draft", source: "Renewal", basePricing: "Premium Global Tier", monthlyValue: "$1,350/mo", unitsLinked: 0 },
@@ -94,8 +109,10 @@ export const billingArrangementsByClient: Record<string, BillingArrangement[]> =
 };
 
 const sampleCags: CagAssociation[] = [
-  { id: "CAG-001", carrier: "FedEx", account: "ACC-77821", group: "Domestic Ground", effectiveFrom: "Jan 01, 2024", effectiveTo: "Dec 31, 2024", status: "Active", pricingOverrides: [{ productName: "Last-Mile Delivery Pro", adjusted: "$4.05" }] },
-  { id: "CAG-002", carrier: "UPS", account: "ACC-43219", group: "International Air", effectiveFrom: "Mar 15, 2024", effectiveTo: "Dec 31, 2025", status: "Active", pricingOverrides: [{ productName: "Real-time Tracking API", adjusted: "$0.62" }] },
+  { id: "CAG-003", carrier: "FedEx", account: "—", group: "—", scopeLevel: "carrier", effectiveFrom: "Jan 01, 2024", effectiveTo: "Dec 31, 2025", status: "Active", pricingOverrides: [{ productName: "Last-Mile Delivery Pro", adjusted: "$4.20" }] },
+  { id: "CAG-001", carrier: "FedEx", account: "ACC-77821", group: "—", scopeLevel: "account", effectiveFrom: "Jan 01, 2024", effectiveTo: "Dec 31, 2025", status: "Active", pricingOverrides: [{ productName: "Last-Mile Delivery Pro", adjusted: "$4.10" }] },
+  { id: "CAG-004", carrier: "FedEx", account: "ACC-77821", group: "Domestic Ground", scopeLevel: "group", effectiveFrom: "Jan 01, 2024", effectiveTo: "Dec 31, 2024", status: "Active", pricingOverrides: [{ productName: "Last-Mile Delivery Pro", adjusted: "$4.05" }] },
+  { id: "CAG-002", carrier: "UPS", account: "ACC-43219", group: "International Air", scopeLevel: "group", effectiveFrom: "Mar 15, 2024", effectiveTo: "Dec 31, 2025", status: "Active", pricingOverrides: [{ productName: "Real-time Tracking API", adjusted: "$0.62" }] },
 ];
 
 export const operationalUnitsByClient: Record<string, OperationalUnit[]> = {
