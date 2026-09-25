@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Boxes, Tags, Link2, ArrowRight, CreditCard, RefreshCw, GitBranch } from "lucide-react";
+import { Boxes, Tags, Link2, CreditCard, RefreshCw, GitBranch, Search } from "lucide-react";
 import { DataTable } from "@/components/DataTable";
 import { StatusChip, statusToTone } from "@/components/StatusChip";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ExpandedShell, FieldRow } from "@/components/ExpandedShell";
 import { AddEntityDialog, type FieldDef } from "@/components/AddEntityDialog";
 import { cn } from "@/lib/utils";
@@ -63,7 +64,7 @@ function ClientConfiguration() {
 
       {tab === "arrangements" && <BillingArrangementsTab arrangements={arrangements} contracts={contracts} units={units} />}
       {tab === "units" && <UnitsTab units={units} arrangements={arrangements} />}
-      {tab === "pricing" && <PricingTab units={units} />}
+      {tab === "pricing" && <PricingTab units={units} contracts={contracts} />}
       {tab === "cags" && <CagsTab units={units} />}
     </div>
   );
@@ -354,138 +355,215 @@ function InlinePricingEditor({ products }: { products: ProductPrice[] }) {
 
 /* -------------------- Pricing Models -------------------- */
 
-function PricingTab({ units }: { units: OperationalUnit[] }) {
-  const overrideCount = units.reduce(
-    (n, u) => n + u.products.filter((p) => parseFloat(p.basePrice.replace(/[^0-9.]/g, "")) !== parseFloat(p.adjusted.replace(/[^0-9.]/g, ""))).length,
-    0,
-  );
-  const cagScopes = units.flatMap((unit) => unit.cags.map((cag) => ({ unit, cag })));
-  const cagOverrideCount = cagScopes.reduce((total, { cag }) => total + (cag.pricingOverrides?.length ?? 0), 0);
+type ProductPricingSummary = {
+  id: string;
+  name: string;
+  category: string;
+  contractRates: string[];
+  ouOverrideCount: number;
+  cagOverrideCount: number;
+};
+
+const priceHelper = createColumnHelper<ProductPricingSummary>();
+
+function PricingTab({ units, contracts }: { units: OperationalUnit[]; contracts: Contract[] }) {
+  const activeContracts = contracts.filter((contract) => contract.status === "Active");
+  const rows: ProductPricingSummary[] = globalProducts.map((product) => {
+    const prices = units.flatMap((unit) => {
+      const contract = activeContracts.find((item) => item.billingArrangementId === unit.billingArrangementId);
+      return contract?.productPrices?.filter((item) => item.productName === product.name).map((item) => item.price) ?? [];
+    });
+    const ouOverrideCount = units.filter((unit) => {
+      const contract = activeContracts.find((item) => item.billingArrangementId === unit.billingArrangementId);
+      const contractPrice = contract?.productPrices?.find((item) => item.productName === product.name)?.price;
+      const ouPrice = unit.products.find((item) => item.name === product.name)?.adjusted;
+      return pricesDiffer(contractPrice, ouPrice);
+    }).length;
+    const cagOverrideCount = units.reduce((total, unit) => total + unit.cags.filter((cag) => {
+      const cagPrice = cag.pricingOverrides?.find((item) => item.productName === product.name)?.adjusted;
+      return Boolean(cagPrice);
+    }).length, 0);
+    return {
+      id: product.id,
+      name: product.name,
+      category: product.category,
+      contractRates: [...new Set(prices)],
+      ouOverrideCount,
+      cagOverrideCount,
+    };
+  });
+
+  const columns = useMemo(() => [
+    priceHelper.accessor("name", {
+      header: "Product",
+      cell: (info) => <div><div className="font-semibold text-slate-900">{info.getValue()}</div><div className="text-xs text-slate-500">{info.row.original.category} · {info.row.original.id}</div></div>,
+    }),
+    priceHelper.accessor("contractRates", {
+      header: "Active contract rates",
+      cell: (info) => info.getValue().length ? <div className="flex flex-wrap gap-1.5">{info.getValue().map((rate) => <span key={rate} className="rounded-sm bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{rate}</span>)}</div> : <span className="text-xs text-slate-400">No active contract rate</span>,
+    }),
+    priceHelper.accessor("ouOverrideCount", { header: "OU differences", cell: (info) => <span className="font-medium text-slate-700">{info.getValue()}</span> }),
+    priceHelper.accessor("cagOverrideCount", { header: "CAG differences", cell: (info) => <span className="font-medium text-slate-700">{info.getValue()}</span> }),
+  ], []);
+
+  const ouOverrides = rows.reduce((sum, product) => sum + product.ouOverrideCount, 0);
+  const cagOverrides = rows.reduce((sum, product) => sum + product.cagOverrideCount, 0);
+  const cagScopes = units.reduce((sum, unit) => sum + unit.cags.length, 0);
 
   return (
     <div className="space-y-4">
-      <SectionHeader
-        title="Pricing Models"
-        desc="Review the complete global product catalog and compare inherited prices with OU and CAG overrides."
-      />
-
+      <SectionHeader title="Contract Pricing & Overrides" desc="Contract rates are the reference. Operational Unit overrides apply next, followed by Carrier, Carrier + Account, and Carrier + Account + Group pricing." />
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <LayerCard
-          tone="info" label="Global Pricing"
-          title={`${globalProducts.length} products`}
-          sub="Authoritative price catalog"
-          footer="Inherited by every OU and CAG unless a scoped override applies."
-        />
-        <LayerCard
-          tone="warning" label="OU Overrides"
-          title={`${overrideCount} active overrides`}
-          sub={`${units.length} operational units`}
-          footer="OU prices override the global price for that unit."
-        />
-        <LayerCard
-          tone="success" label="CAG Overrides"
-          title={`${cagOverrideCount} active overrides`}
-          sub={`${cagScopes.length} CAG scopes`}
-          footer="CAG prices take precedence within their OU association."
-        />
+        <LayerCard tone="info" label="Contract rates" title={`${activeContracts.length} active contracts`} sub={`${rows.filter((row) => row.contractRates.length > 0).length} products with contract pricing`} footer="Rates come from the active contracts linked through each Billing Arrangement." />
+        <LayerCard tone="warning" label="OU differences" title={`${ouOverrides} product / OU pairs`} sub={`${units.length} operational units`} footer="An OU price replaces its linked contract rate for that unit." />
+        <LayerCard tone="success" label="CAG differences" title={`${cagOverrides} scoped prices`} sub={`${cagScopes} carrier associations`} footer="CAG pricing is nested below the OU: carrier → account → group." />
       </div>
+      <DataTable
+        data={rows}
+        columns={columns}
+        getRowId={(row) => row.id}
+        searchKeys={["id", "name", "category"]}
+        searchPlaceholder="Search products…"
+        emptyMessage="No products match your search."
+        renderExpanded={(product) => <PricingProductDetail product={product} units={units} contracts={activeContracts} />}
+      />
+    </div>
+  );
+}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">Global product pricing and overrides</div>
-            <div className="text-xs text-slate-500">All products remain visible, including those without scoped assignments.</div>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 text-[11px]">
-            <Legend swatch="bg-slate-100 text-slate-600" label="Inherited" />
-            <Legend swatch="bg-amber-50 text-amber-700 ring-amber-200" label="OU override" />
-            <Legend swatch="bg-sky-50 text-sky-700 ring-sky-200" label="CAG override" />
-          </div>
-        </div>
+type PricingComparison = {
+  id: string;
+  scope: "ou" | "carrier" | "account" | "group";
+  label: string;
+  detail: string;
+  contractPrice?: string;
+  parentPrice?: string;
+  appliedPrice?: string;
+  source: string;
+  override: boolean;
+};
 
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
-          <table className="w-full text-sm">
-            <thead className="thead-brand">
-              <tr>
-                <th className="th-brand px-3 py-2 text-left">Product</th>
-                <th className="th-brand px-3 py-2 text-left">Model</th>
-                <th className="th-brand px-3 py-2 text-right">Global Price</th>
-                {units.map((u) => (
-                  <th key={u.id} className="th-brand px-3 py-2 text-right">
-                    <div>{u.name} · OU</div>
-                    <div className="font-mono text-[10px] font-normal normal-case tracking-normal text-slate-400">{u.id}</div>
-                  </th>
-                ))}
-                {cagScopes.map(({ unit, cag }) => (
-                  <th key={`${unit.id}-${cag.id}`} className="th-brand px-3 py-2 text-right">
-                    <div>{cag.carrier} · CAG</div>
-                    <div className="font-mono text-[10px] font-normal normal-case tracking-normal text-slate-400">{unit.id} / {cag.id}</div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {globalProducts.map((product) => {
-                const globalPrice = parsePrice(product.basePrice);
-                return (
-                  <tr key={product.id} className="border-t border-slate-100">
-                    <td className="min-w-52 px-3 py-2"><div className="font-medium text-slate-900">{product.name}</div><div className="font-mono text-[10px] text-slate-400">{product.id}</div></td>
-                    <td className="min-w-36 px-3 py-2 text-slate-600">{product.uom}</td>
-                    <td className="px-3 py-2 text-right font-semibold text-slate-900">{product.basePrice}</td>
-                    {units.map((u) => {
-                      const scopedPrice = u.products.find((item) => item.name === product.name)?.adjusted;
-                      return <PriceCell key={u.id} globalLabel={product.basePrice} globalPrice={globalPrice} scopedPrice={scopedPrice} type="ou" />;
-                    })}
-                    {cagScopes.map(({ unit, cag }) => {
-                      const cagPrice = cag.pricingOverrides?.find((item) => item.productName === product.name)?.adjusted;
-                      const ouPrice = unit.products.find((item) => item.name === product.name)?.adjusted;
-                      return <PriceCell key={`${unit.id}-${cag.id}`} globalLabel={product.basePrice} globalPrice={globalPrice} scopedPrice={cagPrice} inheritedPrice={ouPrice} type="cag" />;
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+function PricingProductDetail({ product, units, contracts }: { product: ProductPricingSummary; units: OperationalUnit[]; contracts: Contract[] }) {
+  const [query, setQuery] = useState("");
+  const [scope, setScope] = useState("all");
+  const [overridesOnly, setOverridesOnly] = useState(false);
+  const [page, setPage] = useState(0);
+  const pageSize = 10;
+  const comparisons: PricingComparison[] = units.flatMap((unit) => {
+    const contract = contracts.find((item) => item.billingArrangementId === unit.billingArrangementId);
+    const contractPrice = contract?.productPrices?.find((item) => item.productName === product.name)?.price;
+    const rawOuPrice = unit.products.find((item) => item.name === product.name)?.adjusted;
+    const ouOverride = pricesDiffer(contractPrice, rawOuPrice);
+    const ouPrice = contractPrice ? (ouOverride ? rawOuPrice : contractPrice) : undefined;
+    const unitRows: PricingComparison[] = [{
+      id: `${unit.id}-ou`, scope: "ou", label: unit.name, detail: `${unit.id} · ${unit.region}`,
+      contractPrice, parentPrice: contractPrice, appliedPrice: ouPrice,
+      source: ouOverride ? "OU override" : "Active contract", override: ouOverride,
+    }];
+    const cagRows = unit.cags.map((cag): PricingComparison => {
+      const level = cag.scopeLevel ?? (cag.group && cag.group !== "—" ? "group" : cag.account && cag.account !== "—" ? "account" : "carrier");
+      const parentLevel = level === "group" ? "account" : level === "account" ? "carrier" : "ou";
+      const parentCag = level === "group"
+        ? unit.cags.find((candidate) => candidate.carrier === cag.carrier && candidate.account === cag.account && (candidate.scopeLevel ?? (candidate.group && candidate.group !== "—" ? "group" : candidate.account && candidate.account !== "—" ? "account" : "carrier")) === "account")
+        : level === "account"
+          ? unit.cags.find((candidate) => candidate.carrier === cag.carrier && (candidate.scopeLevel ?? (candidate.group && candidate.group !== "—" ? "group" : candidate.account && candidate.account !== "—" ? "account" : "carrier")) === "carrier")
+          : undefined;
+      const parentOverride = parentCag?.pricingOverrides?.find((item) => item.productName === product.name)?.adjusted;
+      const parentPrice = parentOverride ?? ouPrice;
+      const ownPrice = cag.pricingOverrides?.find((item) => item.productName === product.name)?.adjusted;
+      const appliedPrice = contractPrice ? (ownPrice ?? parentPrice) : undefined;
+      const override = pricesDiffer(parentPrice, ownPrice);
+      const scopeName = level === "carrier" ? "Carrier" : level === "account" ? "Carrier + Account" : "Carrier + Account + Group";
+      const detail = [cag.carrier, cag.account !== "—" ? cag.account : undefined, cag.group !== "—" ? cag.group : undefined].filter(Boolean).join(" · ");
+      return {
+        id: `${unit.id}-${cag.id}`, scope: level, label: `${scopeName} · ${detail}`, detail: `${unit.name} (${unit.id}) · ${cag.id}`,
+        contractPrice, parentPrice, appliedPrice,
+        source: override ? `${scopeName} override` : parentCag && parentOverride ? `Inherited from ${parentLevel === "account" ? "account" : "carrier"}` : "Inherited from OU",
+        override,
+      };
+    });
+    return [...unitRows, ...cagRows];
+  });
 
-        <div className="mt-3 text-xs text-slate-500">
-          OU prices inherit globally; CAG prices inherit their OU price before applying a CAG-specific override. Manage OU overrides under <span className="font-semibold text-slate-700">Operational Units</span>.
-          <ArrowRight className="ml-1 inline size-3" />
+  const filtered = comparisons.filter((item) => {
+    const matchesScope = scope === "all" || item.scope === scope;
+    const matchesSearch = `${item.label} ${item.detail} ${item.source}`.toLowerCase().includes(query.toLowerCase());
+    return matchesScope && matchesSearch && (!overridesOnly || item.override);
+  });
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, pageCount - 1);
+  const visibleRows = filtered.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">{product.name} · pricing by scope</h3>
+          <p className="text-xs text-slate-500">Compare each scope against its contract rate and the price inherited from its parent.</p>
         </div>
+        <span className="text-xs text-slate-500">{filtered.length} comparison rows</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-48 flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+          <Input aria-label="Search pricing scopes" value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} placeholder="Search OUs, carriers, accounts…" className="h-9 pl-8" />
+        </div>
+        <Select value={scope} onValueChange={(value) => { setScope(value); setPage(0); }}>
+          <SelectTrigger aria-label="Filter pricing scope" className="w-full sm:w-56"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All pricing scopes</SelectItem>
+            <SelectItem value="ou">Operational Units</SelectItem>
+            <SelectItem value="carrier">Carrier</SelectItem>
+            <SelectItem value="account">Carrier + Account</SelectItem>
+            <SelectItem value="group">Carrier + Account + Group</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant={overridesOnly ? "default" : "outline"} size="sm" onClick={() => { setOverridesOnly((current) => !current); setPage(0); }}>
+          {overridesOnly ? "Overrides only" : "Show all prices"}
+        </Button>
+      </div>
+      <div className="overflow-x-auto rounded-md border border-slate-200">
+        <table className="w-full text-left text-xs">
+          <thead className="thead-brand"><tr><th className="th-brand px-3 py-2">Scope / peer</th><th className="th-brand px-3 py-2">Contract</th><th className="th-brand px-3 py-2">Inherited from parent</th><th className="th-brand px-3 py-2">Applicable price</th><th className="th-brand px-3 py-2">Vs. contract</th><th className="th-brand px-3 py-2">Price source</th></tr></thead>
+          <tbody>
+            {visibleRows.map((row) => {
+              const delta = priceDelta(row.contractPrice, row.appliedPrice);
+              return <tr key={row.id} className="border-t border-slate-100 align-top">
+                <td className="min-w-52 px-3 py-2"><div className="font-medium text-slate-800">{row.label}</div><div className="mt-0.5 text-[10px] text-slate-500">{row.detail}</div></td>
+                <td className="whitespace-nowrap px-3 py-2 text-slate-600">{row.contractPrice ?? <span className="text-slate-400">Not priced</span>}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-slate-600">{row.parentPrice ?? <span className="text-slate-400">Not priced</span>}</td>
+                <td className="whitespace-nowrap px-3 py-2"><span className={cn("font-semibold", row.override ? "text-brand-primary" : "text-slate-800")}>{row.appliedPrice ?? "Not priced"}</span></td>
+                <td className={cn("whitespace-nowrap px-3 py-2 font-medium", delta === null ? "text-slate-400" : delta < 0 ? "text-emerald-700" : delta > 0 ? "text-rose-700" : "text-slate-500")}>{delta === null ? "—" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)}%`}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-slate-500">{row.source}</td>
+              </tr>;
+            })}
+            {visibleRows.length === 0 && <tr><td colSpan={6} className="px-3 py-8 text-center text-slate-500">No pricing comparisons match these filters.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+        <span>Showing {filtered.length === 0 ? 0 : currentPage * pageSize + 1}–{Math.min((currentPage + 1) * pageSize, filtered.length)} of {filtered.length}</span>
+        <div className="flex items-center gap-2"><Button size="sm" variant="outline" disabled={currentPage === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>Previous</Button><span>Page {currentPage + 1} of {pageCount}</span><Button size="sm" variant="outline" disabled={currentPage + 1 >= pageCount} onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))}>Next</Button></div>
       </div>
     </div>
   );
 }
 
-function parsePrice(value: string) {
+function parsePrice(value?: string) {
+  if (!value) return Number.NaN;
   return Number.parseFloat(value.replace(/[^0-9.]/g, ""));
 }
 
-function PriceCell({ globalLabel, globalPrice, scopedPrice, inheritedPrice, type }: { globalLabel: string; globalPrice: number; scopedPrice?: string; inheritedPrice?: string; type: "ou" | "cag" }) {
-  const inheritedLabel = inheritedPrice ?? globalLabel;
-  const value = scopedPrice ?? inheritedLabel;
-  const numericValue = parsePrice(value);
-  const reference = type === "cag" && inheritedPrice ? parsePrice(inheritedPrice) : globalPrice;
-  const overridden = scopedPrice !== undefined && numericValue !== reference;
-  const delta = reference ? ((numericValue - reference) / reference) * 100 : 0;
+function pricesDiffer(reference?: string, candidate?: string) {
+  if (!reference || !candidate) return false;
+  return parsePrice(reference) !== parsePrice(candidate);
+}
 
-  return (
-    <td className="min-w-36 px-3 py-2 text-right">
-      {overridden ? (
-        <div className="inline-flex flex-col items-end">
-          <span className={cn("inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-semibold ring-1 ring-inset", type === "ou" ? "bg-amber-50 text-amber-700 ring-amber-200" : "bg-sky-50 text-sky-700 ring-sky-200")}>
-            {value}<span className="text-[10px] opacity-70">{delta > 0 ? "+" : ""}{delta.toFixed(1)}%</span>
-          </span>
-          <span className="mt-0.5 text-[10px] text-slate-400">from {inheritedLabel}</span>
-        </div>
-      ) : (
-        <div className="inline-flex flex-col items-end">
-          <span className="text-slate-600">{value}</span>
-          <span className="text-[10px] text-slate-400">Inherited</span>
-        </div>
-      )}
-    </td>
-  );
+function priceDelta(reference?: string, candidate?: string) {
+  const base = parsePrice(reference);
+  const value = parsePrice(candidate);
+  if (!Number.isFinite(base) || !Number.isFinite(value) || base === 0) return null;
+  return ((value - base) / base) * 100;
 }
 
 function LayerCard({ tone, label, title, sub, footer }: { tone: "info" | "warning" | "success"; label: string; title: string; sub: string; footer: string }) {
@@ -497,14 +575,6 @@ function LayerCard({ tone, label, title, sub, footer }: { tone: "info" | "warnin
       <div className="text-xs text-slate-600">{sub}</div>
       <div className="mt-2 text-[11px] text-slate-500">{footer}</div>
     </div>
-  );
-}
-
-function Legend({ swatch, label }: { swatch: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-slate-500">
-      <span className={cn("inline-block size-2.5 rounded-sm ring-1 ring-inset", swatch)} /> {label}
-    </span>
   );
 }
 
