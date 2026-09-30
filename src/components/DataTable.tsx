@@ -1,4 +1,4 @@
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -13,6 +13,7 @@ import {
 import { ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
 interface DataTableProps<T> {
@@ -26,6 +27,8 @@ interface DataTableProps<T> {
   pageSize?: number;
   emptyMessage?: string;
   getRowId?: (row: T) => string;
+  selectable?: boolean;
+  onSelectionChange?: (rows: T[]) => void;
 }
 
 export function DataTable<T extends { id?: string }>({
@@ -39,6 +42,8 @@ export function DataTable<T extends { id?: string }>({
   pageSize = 8,
   emptyMessage = "No records found.",
   getRowId,
+  selectable = false,
+  onSelectionChange,
 }: DataTableProps<T>) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
