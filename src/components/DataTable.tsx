@@ -117,6 +117,16 @@ export function DataTable<T extends { id?: string }>({
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {renderExpanded && <th className="w-8" />}
+                {selectable && (
+                  <th className="w-10 px-3 py-2.5">
+                    <Checkbox
+                      checked={allVisibleSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label="Select all rows"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </th>
+                )}
                 {hg.headers.map((h) => {
                   const canSort = h.column.getCanSort();
                   const sorted = h.column.getIsSorted();
