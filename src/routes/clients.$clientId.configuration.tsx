@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Boxes, Tags, Link2, CreditCard, RefreshCw, GitBranch, Search } from "lucide-react";
+import { Boxes, Tags, Link2, CreditCard, RefreshCw, GitBranch, Search, CalendarClock, CircleOff, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DataTable } from "@/components/DataTable";
 import { StatusChip, statusToTone } from "@/components/StatusChip";
 import { Input } from "@/components/ui/input";
@@ -650,12 +651,31 @@ function CagsTab({ units }: { units: OperationalUnit[] }) {
         desc="Carrier + Account + Group mappings across operational units, scoped by effective date."
         action={<Button size="sm" onClick={() => setOpenAdd(true)} className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ Add CAG</Button>}
       />
+      {selected.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-brand-primary/25 bg-brand-primary/[0.04] px-4 py-2.5">
+          <span className="text-xs font-semibold text-slate-700">
+            {selected.length} selected
+          </span>
+          <div className="mx-1 h-4 w-px bg-slate-200" />
+          <Button size="sm" variant="outline" className="h-8 border-slate-200" onClick={() => setOpenDates(true)}>
+            <CalendarClock className="mr-1.5 size-3.5" /> Edit dates
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 border-slate-200" onClick={bulkInactivate}>
+            <CircleOff className="mr-1.5 size-3.5" /> Inactivate
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setConfirmDelete(true)}>
+            <Trash2 className="mr-1.5 size-3.5" /> Delete
+          </Button>
+        </div>
+      )}
       <DataTable
         data={rows}
         columns={columns}
         searchPlaceholder="Search by carrier, account or unit…"
         emptyMessage="No CAG associations yet."
-        renderExpanded={(c: CagAssociation & { ouName: string; ouId: string }) => (
+        selectable
+        onSelectionChange={setSelected}
+        renderExpanded={(c: CagRow) => (
           <ExpandedShell
             sections={[
               {
