@@ -75,7 +75,26 @@ export function DataTable<T extends { id?: string }>({
 
   const rows = table.getRowModel().rows;
   const total = table.getFilteredRowModel().rows.length;
-  const colCount = columns.length + (renderExpanded ? 1 : 0);
+  const colCount = columns.length + (renderExpanded ? 1 : 0) + (selectable ? 1 : 0);
+
+  const visibleKeys = rows.map(rowKey);
+  const selectedRows = selectable ? data.filter((d) => selected[getRowId?.(d) ?? d.id ?? ""]) : [];
+  const allVisibleSelected = visibleKeys.length > 0 && visibleKeys.every((k) => selected[k]);
+
+  useEffect(() => {
+    if (!selectable || !onSelectionChange) return;
+    onSelectionChange(selectedRows);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, data, selectable]);
+
+  const toggleAll = () => {
+    setSelected((p) => {
+      const next = { ...p };
+      if (allVisibleSelected) visibleKeys.forEach((k) => delete next[k]);
+      else visibleKeys.forEach((k) => { next[k] = true; });
+      return next;
+    });
+  };
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
