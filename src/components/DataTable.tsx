@@ -212,7 +212,8 @@ export function DataTable<T extends { id?: string }>({
                     {renderExpanded && isOpen && (
                       <tr className="bg-slate-50/50">
                         <td />
-                        <td colSpan={colCount - 1} className="px-4 pb-5 pt-2">
+                        {selectable && <td />}
+                        <td colSpan={colCount - (selectable ? 2 : 1)} className="px-4 pb-5 pt-2">
                           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                             {renderExpanded(row.original)}
                           </div>
