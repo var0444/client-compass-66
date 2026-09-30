@@ -580,10 +580,38 @@ function LayerCard({ tone, label, title, sub, footer }: { tone: "info" | "warnin
 
 /* -------------------- CAGs -------------------- */
 
+type CagRow = CagAssociation & { ouName: string; ouId: string };
+
 function CagsTab({ units }: { units: OperationalUnit[] }) {
   const [openAdd, setOpenAdd] = useState(false);
-  const rows = units.flatMap((u) => u.cags.map((c) => ({ ...c, ouName: u.name, ouId: u.id })));
-  const helper = createColumnHelper<typeof rows[number]>();
+  const [rows, setRows] = useState<CagRow[]>(() => units.flatMap((u) => u.cags.map((c) => ({ ...c, ouName: u.name, ouId: u.id }))));
+  const [selected, setSelected] = useState<CagRow[]>([]);
+  const [openDates, setOpenDates] = useState(false);
+  const [bulkFrom, setBulkFrom] = useState("");
+  const [bulkTo, setBulkTo] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const selectedIds = new Set(selected.map((r) => r.id));
+  const applyToSelected = (fn: (r: CagRow) => CagRow) =>
+    setRows((prev) => prev.map((r) => (selectedIds.has(r.id) ? fn(r) : r)));
+
+  const bulkInactivate = () => applyToSelected((r) => ({ ...r, status: "Inactive" }));
+  const bulkDelete = () => {
+    setRows((prev) => prev.filter((r) => !selectedIds.has(r.id)));
+    setConfirmDelete(false);
+  };
+  const bulkSaveDates = () => {
+    applyToSelected((r) => ({
+      ...r,
+      effectiveFrom: bulkFrom || r.effectiveFrom,
+      effectiveTo: bulkTo || r.effectiveTo,
+    }));
+    setOpenDates(false);
+    setBulkFrom("");
+    setBulkTo("");
+  };
+
+  const helper = createColumnHelper<CagRow>();
   const columns = useMemo(() => [
     helper.accessor("ouName", {
       header: "Operational Unit",
