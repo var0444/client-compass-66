@@ -163,6 +163,7 @@ export function DataTable<T extends { id?: string }>({
               rows.map((row) => {
                 const id = getRowId?.(row.original) ?? row.original.id ?? row.id;
                 const isOpen = !!expanded[id];
+                const isSelected = !!selected[id];
                 const clickable = !!renderExpanded || !!onRowClick;
                 return (
                   <Fragment key={id}>
@@ -175,6 +176,7 @@ export function DataTable<T extends { id?: string }>({
                         "border-b border-slate-50 transition-colors",
                         clickable && "cursor-pointer hover:bg-brand-secondary/[0.035]",
                         isOpen && "bg-brand-secondary/[0.04]",
+                        isSelected && "bg-brand-primary/[0.05]",
                       )}
                     >
                       {renderExpanded && (
@@ -182,6 +184,23 @@ export function DataTable<T extends { id?: string }>({
                           <span className="grid size-5 place-items-center rounded text-slate-400">
                             {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                           </span>
+                        </td>
+                      )}
+                      {selectable && (
+                        <td className="px-3 align-middle">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(v) =>
+                              setSelected((p) => {
+                                const next = { ...p };
+                                if (v) next[id] = true;
+                                else delete next[id];
+                                return next;
+                              })
+                            }
+                            aria-label="Select row"
+                            onClick={(e) => e.stopPropagation()}
+                          />
                         </td>
                       )}
                       {row.getVisibleCells().map((cell) => (
