@@ -723,6 +723,46 @@ function CagsTab({ units }: { units: OperationalUnit[] }) {
         title="Add CAG Association" description="Map a Carrier · Account · Group to an operational unit."
         fields={fields} submitLabel="Create CAG"
       />
+      <Dialog open={openDates} onOpenChange={setOpenDates}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit effective dates</DialogTitle>
+            <DialogDescription>
+              Apply new effective dates to {selected.length} selected CAG association{selected.length === 1 ? "" : "s"}. Leave a field blank to keep the existing value.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 py-2">
+            <FieldLabel label="Effective From">
+              <Input type="date" value={bulkFrom} onChange={(e) => setBulkFrom(e.target.value)} />
+            </FieldLabel>
+            <FieldLabel label="Effective To">
+              <Input type="date" value={bulkTo} onChange={(e) => setBulkTo(e.target.value)} />
+            </FieldLabel>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenDates(false)}>Cancel</Button>
+            <Button onClick={bulkSaveDates} disabled={!bulkFrom && !bulkTo} className="bg-brand-primary text-white hover:bg-brand-primary-hover">
+              Apply to {selected.length}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete CAG associations</DialogTitle>
+            <DialogDescription>
+              This will permanently remove {selected.length} selected CAG association{selected.length === 1 ? "" : "s"}. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+            <Button onClick={bulkDelete} className="bg-red-600 text-white hover:bg-red-700">
+              Delete {selected.length}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
