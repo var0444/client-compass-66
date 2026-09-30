@@ -1,4 +1,4 @@
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -13,6 +13,7 @@ import {
 import { ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
 interface DataTableProps<T> {
@@ -26,6 +27,8 @@ interface DataTableProps<T> {
   pageSize?: number;
   emptyMessage?: string;
   getRowId?: (row: T) => string;
+  selectable?: boolean;
+  onSelectionChange?: (rows: T[]) => void;
 }
 
 export function DataTable<T extends { id?: string }>({
@@ -39,11 +42,16 @@ export function DataTable<T extends { id?: string }>({
   pageSize = 8,
   emptyMessage = "No records found.",
   getRowId,
+  selectable = false,
+  onSelectionChange,
 }: DataTableProps<T>) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+
+  const rowKey = (row: { original: T; id: string }) => getRowId?.(row.original) ?? row.original.id ?? row.id;
 
   const table = useReactTable({
     data,
@@ -67,7 +75,26 @@ export function DataTable<T extends { id?: string }>({
 
   const rows = table.getRowModel().rows;
   const total = table.getFilteredRowModel().rows.length;
-  const colCount = columns.length + (renderExpanded ? 1 : 0);
+  const colCount = columns.length + (renderExpanded ? 1 : 0) + (selectable ? 1 : 0);
+
+  const visibleKeys = rows.map(rowKey);
+  const selectedRows = selectable ? data.filter((d) => selected[getRowId?.(d) ?? d.id ?? ""]) : [];
+  const allVisibleSelected = visibleKeys.length > 0 && visibleKeys.every((k) => selected[k]);
+
+  useEffect(() => {
+    if (!selectable || !onSelectionChange) return;
+    onSelectionChange(selectedRows);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, data, selectable]);
+
+  const toggleAll = () => {
+    setSelected((p) => {
+      const next = { ...p };
+      if (allVisibleSelected) visibleKeys.forEach((k) => delete next[k]);
+      else visibleKeys.forEach((k) => { next[k] = true; });
+      return next;
+    });
+  };
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
@@ -90,6 +117,16 @@ export function DataTable<T extends { id?: string }>({
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {renderExpanded && <th className="w-8" />}
+                {selectable && (
+                  <th className="w-10 px-3 py-2.5">
+                    <Checkbox
+                      checked={allVisibleSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label="Select all rows"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </th>
+                )}
                 {hg.headers.map((h) => {
                   const canSort = h.column.getCanSort();
                   const sorted = h.column.getIsSorted();
@@ -126,6 +163,7 @@ export function DataTable<T extends { id?: string }>({
               rows.map((row) => {
                 const id = getRowId?.(row.original) ?? row.original.id ?? row.id;
                 const isOpen = !!expanded[id];
+                const isSelected = !!selected[id];
                 const clickable = !!renderExpanded || !!onRowClick;
                 return (
                   <Fragment key={id}>
@@ -138,6 +176,7 @@ export function DataTable<T extends { id?: string }>({
                         "border-b border-slate-50 transition-colors",
                         clickable && "cursor-pointer hover:bg-brand-secondary/[0.035]",
                         isOpen && "bg-brand-secondary/[0.04]",
+                        isSelected && "bg-brand-primary/[0.05]",
                       )}
                     >
                       {renderExpanded && (
@@ -145,6 +184,23 @@ export function DataTable<T extends { id?: string }>({
                           <span className="grid size-5 place-items-center rounded text-slate-400">
                             {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                           </span>
+                        </td>
+                      )}
+                      {selectable && (
+                        <td className="px-3 align-middle">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(v) =>
+                              setSelected((p) => {
+                                const next = { ...p };
+                                if (v) next[id] = true;
+                                else delete next[id];
+                                return next;
+                              })
+                            }
+                            aria-label="Select row"
+                            onClick={(e) => e.stopPropagation()}
+                          />
                         </td>
                       )}
                       {row.getVisibleCells().map((cell) => (
@@ -156,7 +212,8 @@ export function DataTable<T extends { id?: string }>({
                     {renderExpanded && isOpen && (
                       <tr className="bg-slate-50/50">
                         <td />
-                        <td colSpan={colCount - 1} className="px-4 pb-5 pt-2">
+                        {selectable && <td />}
+                        <td colSpan={colCount - (selectable ? 2 : 1)} className="px-4 pb-5 pt-2">
                           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                             {renderExpanded(row.original)}
                           </div>

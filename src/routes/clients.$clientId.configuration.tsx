@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Boxes, Tags, Link2, CreditCard, RefreshCw, GitBranch, Search } from "lucide-react";
+import { Boxes, Tags, Link2, CreditCard, RefreshCw, GitBranch, Search, CalendarClock, CircleOff, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DataTable } from "@/components/DataTable";
 import { StatusChip, statusToTone } from "@/components/StatusChip";
 import { Input } from "@/components/ui/input";
@@ -580,10 +581,38 @@ function LayerCard({ tone, label, title, sub, footer }: { tone: "info" | "warnin
 
 /* -------------------- CAGs -------------------- */
 
+type CagRow = CagAssociation & { ouName: string; ouId: string };
+
 function CagsTab({ units }: { units: OperationalUnit[] }) {
   const [openAdd, setOpenAdd] = useState(false);
-  const rows = units.flatMap((u) => u.cags.map((c) => ({ ...c, ouName: u.name, ouId: u.id })));
-  const helper = createColumnHelper<typeof rows[number]>();
+  const [rows, setRows] = useState<CagRow[]>(() => units.flatMap((u) => u.cags.map((c) => ({ ...c, ouName: u.name, ouId: u.id }))));
+  const [selected, setSelected] = useState<CagRow[]>([]);
+  const [openDates, setOpenDates] = useState(false);
+  const [bulkFrom, setBulkFrom] = useState("");
+  const [bulkTo, setBulkTo] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const selectedIds = new Set(selected.map((r) => r.id));
+  const applyToSelected = (fn: (r: CagRow) => CagRow) =>
+    setRows((prev) => prev.map((r) => (selectedIds.has(r.id) ? fn(r) : r)));
+
+  const bulkInactivate = () => applyToSelected((r) => ({ ...r, status: "Inactive" }));
+  const bulkDelete = () => {
+    setRows((prev) => prev.filter((r) => !selectedIds.has(r.id)));
+    setConfirmDelete(false);
+  };
+  const bulkSaveDates = () => {
+    applyToSelected((r) => ({
+      ...r,
+      effectiveFrom: bulkFrom || r.effectiveFrom,
+      effectiveTo: bulkTo || r.effectiveTo,
+    }));
+    setOpenDates(false);
+    setBulkFrom("");
+    setBulkTo("");
+  };
+
+  const helper = createColumnHelper<CagRow>();
   const columns = useMemo(() => [
     helper.accessor("ouName", {
       header: "Operational Unit",
@@ -622,12 +651,31 @@ function CagsTab({ units }: { units: OperationalUnit[] }) {
         desc="Carrier + Account + Group mappings across operational units, scoped by effective date."
         action={<Button size="sm" onClick={() => setOpenAdd(true)} className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ Add CAG</Button>}
       />
+      {selected.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-brand-primary/25 bg-brand-primary/[0.04] px-4 py-2.5">
+          <span className="text-xs font-semibold text-slate-700">
+            {selected.length} selected
+          </span>
+          <div className="mx-1 h-4 w-px bg-slate-200" />
+          <Button size="sm" variant="outline" className="h-8 border-slate-200" onClick={() => setOpenDates(true)}>
+            <CalendarClock className="mr-1.5 size-3.5" /> Edit dates
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 border-slate-200" onClick={bulkInactivate}>
+            <CircleOff className="mr-1.5 size-3.5" /> Inactivate
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setConfirmDelete(true)}>
+            <Trash2 className="mr-1.5 size-3.5" /> Delete
+          </Button>
+        </div>
+      )}
       <DataTable
         data={rows}
         columns={columns}
         searchPlaceholder="Search by carrier, account or unit…"
         emptyMessage="No CAG associations yet."
-        renderExpanded={(c: CagAssociation & { ouName: string; ouId: string }) => (
+        selectable
+        onSelectionChange={setSelected}
+        renderExpanded={(c: CagRow) => (
           <ExpandedShell
             sections={[
               {
@@ -675,6 +723,46 @@ function CagsTab({ units }: { units: OperationalUnit[] }) {
         title="Add CAG Association" description="Map a Carrier · Account · Group to an operational unit."
         fields={fields} submitLabel="Create CAG"
       />
+      <Dialog open={openDates} onOpenChange={setOpenDates}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit effective dates</DialogTitle>
+            <DialogDescription>
+              Apply new effective dates to {selected.length} selected CAG association{selected.length === 1 ? "" : "s"}. Leave a field blank to keep the existing value.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 py-2">
+            <FieldLabel label="Effective From">
+              <Input type="date" value={bulkFrom} onChange={(e) => setBulkFrom(e.target.value)} />
+            </FieldLabel>
+            <FieldLabel label="Effective To">
+              <Input type="date" value={bulkTo} onChange={(e) => setBulkTo(e.target.value)} />
+            </FieldLabel>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenDates(false)}>Cancel</Button>
+            <Button onClick={bulkSaveDates} disabled={!bulkFrom && !bulkTo} className="bg-brand-primary text-white hover:bg-brand-primary-hover">
+              Apply to {selected.length}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete CAG associations</DialogTitle>
+            <DialogDescription>
+              This will permanently remove {selected.length} selected CAG association{selected.length === 1 ? "" : "s"}. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+            <Button onClick={bulkDelete} className="bg-red-600 text-white hover:bg-red-700">
+              Delete {selected.length}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
