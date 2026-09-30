@@ -49,6 +49,15 @@ export function DataTable<T extends { id?: string }>({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+
+  const rowKey = (row: { original: T; id: string }) => getRowId?.(row.original) ?? row.original.id ?? row.id;
+
+  useEffect(() => {
+    if (!selectable || !onSelectionChange) return;
+    onSelectionChange(table.getSelectedRowModelSafe());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, data]);
 
   const table = useReactTable({
     data,
