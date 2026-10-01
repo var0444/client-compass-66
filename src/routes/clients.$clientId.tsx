@@ -26,6 +26,15 @@ export const Route = createFileRoute("/clients/$clientId")({
   }),
 });
 
+function ClientError({ error }: { error: unknown }) {
+  const message = error instanceof Error ? error.message : "Unexpected error";
+  return (
+    <AppShell breadcrumbs={[{ label: "Clients", to: "/clients" }, { label: "Error" }]} title="Something went wrong">
+      <p className="text-sm text-rose-600">{message}</p>
+    </AppShell>
+  );
+}
+
 function ClientLayout() {
   const { client } = Route.useLoaderData();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
