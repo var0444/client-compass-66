@@ -585,7 +585,7 @@ type CagRow = CagAssociation & { ouName: string; ouId: string };
 
 function CagsTab({ units }: { units: OperationalUnit[] }) {
   const [openAdd, setOpenAdd] = useState(false);
-  const [rows, setRows] = useState<CagRow[]>(() => units.flatMap((u) => u.cags.map((c) => ({ ...c, ouName: u.name, ouId: u.id }))));
+  const [rows, setRows] = useState<CagRow[]>(() => units.flatMap((u) => u.cags.map((c) => ({ ...c, id: `${u.id}:${c.id}`, ouName: u.name, ouId: u.id }))));
   const [selected, setSelected] = useState<CagRow[]>([]);
   const [openDates, setOpenDates] = useState(false);
   const [bulkFrom, setBulkFrom] = useState("");
