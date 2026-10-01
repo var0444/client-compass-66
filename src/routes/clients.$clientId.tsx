@@ -20,15 +20,20 @@ export const Route = createFileRoute("/clients/$clientId")({
       <Link to="/clients" className="text-sm font-medium text-brand-primary">Back to Clients</Link>
     </AppShell>
   ),
-  errorComponent: ({ error }) => (
-    <AppShell breadcrumbs={[{ label: "Clients", to: "/clients" }, { label: "Error" }]} title="Something went wrong">
-      <p className="text-sm text-rose-600">{error.message}</p>
-    </AppShell>
-  ),
+  errorComponent: ClientError,
   head: ({ loaderData }) => ({
     meta: [{ title: `${loaderData?.client.name ?? "Client"} · Client360` }],
   }),
 });
+
+function ClientError({ error }: { error: unknown }) {
+  const message = error instanceof Error ? error.message : "Unexpected error";
+  return (
+    <AppShell breadcrumbs={[{ label: "Clients", to: "/clients" }, { label: "Error" }]} title="Something went wrong">
+      <p className="text-sm text-rose-600">{message}</p>
+    </AppShell>
+  );
+}
 
 function ClientLayout() {
   const { client } = Route.useLoaderData();
