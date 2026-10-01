@@ -625,7 +625,8 @@ function CagsTab({ units }: { units: OperationalUnit[] }) {
   };
 
   const helper = createColumnHelper<CagRow>();
-  const columns = useMemo(() => [
+  const cellInput = "h-8 text-xs";
+  const columns = useMemo<ColumnDef<CagRow, any>[]>(() => [
     helper.accessor("ouName", {
       header: "Operational Unit",
       cell: (i) => (
@@ -635,13 +636,64 @@ function CagsTab({ units }: { units: OperationalUnit[] }) {
         </div>
       ),
     }),
-    helper.accessor("carrier", { header: "Carrier", cell: (i) => <span className="text-sm text-slate-700">{i.getValue()}</span> }),
-    helper.accessor("account", { header: "Account", cell: (i) => <span className="font-mono text-xs text-slate-600">{i.getValue()}</span> }),
-    helper.accessor("group", { header: "Group", cell: (i) => <span className="text-sm text-slate-700">{i.getValue()}</span> }),
-    helper.accessor("effectiveFrom", { header: "Effective Range", cell: (i) => <span className="text-sm text-slate-600">{i.getValue()} → {i.row.original.effectiveTo}</span> }),
+    helper.accessor("carrier", {
+      header: "Carrier", enableSorting: true,
+      cell: (i) => editingId === i.row.original.id
+        ? <Input className={cellInput} value={draft?.carrier ?? ""} onChange={(e) => patchDraft({ carrier: e.target.value })} onClick={(e) => e.stopPropagation()} />
+        : <span className="text-sm text-slate-700">{i.getValue()}</span>,
+    }),
+    helper.accessor("account", {
+      header: "Account",
+      cell: (i) => editingId === i.row.original.id
+        ? <Input className={cellInput} value={draft?.account ?? ""} onChange={(e) => patchDraft({ account: e.target.value })} onClick={(e) => e.stopPropagation()} />
+        : <span className="font-mono text-xs text-slate-600">{i.getValue()}</span>,
+    }),
+    helper.accessor("group", {
+      header: "Group",
+      cell: (i) => editingId === i.row.original.id
+        ? <Input className={cellInput} value={draft?.group ?? ""} onChange={(e) => patchDraft({ group: e.target.value })} onClick={(e) => e.stopPropagation()} />
+        : <span className="text-sm text-slate-700">{i.getValue()}</span>,
+    }),
+    helper.accessor("effectiveFrom", {
+      header: "Effective From", enableSorting: true,
+      cell: (i) => editingId === i.row.original.id
+        ? <Input type="date" className={cellInput} value={draft?.effectiveFrom ?? ""} onChange={(e) => patchDraft({ effectiveFrom: e.target.value })} onClick={(e) => e.stopPropagation()} />
+        : <span className="text-sm text-slate-600">{i.getValue()}</span>,
+    }),
+    helper.accessor("effectiveTo", {
+      header: "Effective To",
+      cell: (i) => editingId === i.row.original.id
+        ? <Input type="date" className={cellInput} value={draft?.effectiveTo ?? ""} onChange={(e) => patchDraft({ effectiveTo: e.target.value })} onClick={(e) => e.stopPropagation()} />
+        : <span className="text-sm text-slate-600">{i.getValue()}</span>,
+    }),
     helper.accessor("status", { header: "Status", cell: (i) => <StatusChip tone={statusToTone(i.getValue())}>{i.getValue()}</StatusChip> }),
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], []);
+    helper.display({
+      id: "actions",
+      header: "",
+      cell: (i) => {
+        const r = i.row.original;
+        const editing = editingId === r.id;
+        return (
+          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+            {editing ? (
+              <>
+                <Button variant="ghost" size="icon" className="size-7 text-emerald-600 hover:text-emerald-700" title="Save" onClick={saveEdit}>
+                  <Check className="size-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="size-7 text-slate-400 hover:text-slate-600" title="Cancel" onClick={cancelEdit}>
+                  <X className="size-4" />
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" size="icon" className="size-7 text-slate-400 hover:text-brand-primary" title="Edit row" onClick={() => startEdit(r)}>
+                <Pencil className="size-3.5" />
+              </Button>
+            )}
+          </div>
+        );
+      },
+    }),
+  ], [editingId, draft]);
 
   const fields: FieldDef[] = [
     { type: "select", key: "ou", label: "Operational Unit", required: true, options: units.map((u) => ({ value: u.id, label: u.name })) },
