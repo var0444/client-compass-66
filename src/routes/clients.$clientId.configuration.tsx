@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Boxes, Tags, Link2, CreditCard, RefreshCw, GitBranch, Search, CalendarClock, CircleOff, Trash2 } from "lucide-react";
+import { Boxes, Tags, Link2, CreditCard, RefreshCw, GitBranch, Search, CalendarClock, CircleOff, Trash2, Pencil, Check, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DataTable } from "@/components/DataTable";
 import { StatusChip, statusToTone } from "@/components/StatusChip";
@@ -591,6 +591,18 @@ function CagsTab({ units }: { units: OperationalUnit[] }) {
   const [bulkFrom, setBulkFrom] = useState("");
   const [bulkTo, setBulkTo] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<CagRow | null>(null);
+
+  const startEdit = (r: CagRow) => { setEditingId(r.id); setDraft({ ...r }); };
+  const cancelEdit = () => { setEditingId(null); setDraft(null); };
+  const saveEdit = () => {
+    if (!draft) return;
+    setRows((prev) => prev.map((r) => (r.id === draft.id ? draft : r)));
+    setEditingId(null);
+    setDraft(null);
+  };
+  const patchDraft = (patch: Partial<CagRow>) => setDraft((d) => (d ? { ...d, ...patch } : d));
 
   const selectedIds = new Set(selected.map((r) => r.id));
   const applyToSelected = (fn: (r: CagRow) => CagRow) =>
