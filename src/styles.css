@@ -26,8 +26,23 @@
   --color-brand-secondary: #002677;
   --color-brand-secondary-hover: #001A52;
   --color-brand-accent: #00B0E6;
-  --color-surface-base: #F4F6FA;
+  --color-surface-base: #F5F8FD;
   --color-surface-card: #ffffff;
+
+  /*
+   * Navy-tinted neutral scale (remaps Tailwind's slate-* classes app-wide).
+   * Cooler than grey and darker mid-tones so secondary text stays readable.
+   */
+  --color-slate-50: #F6F9FE;
+  --color-slate-100: #EAF0F9;
+  --color-slate-200: #D7E1EF;
+  --color-slate-300: #AFC0D6;
+  --color-slate-400: #647693;
+  --color-slate-500: #4C5D7A;
+  --color-slate-600: #3A4B66;
+  --color-slate-700: #2B3B55;
+  --color-slate-800: #1D2C46;
+  --color-slate-900: #101F38;
 }
 
 @theme inline {
