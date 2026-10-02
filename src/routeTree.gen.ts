@@ -9,21 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as InvoicesRouteImport } from './routes/invoices'
-import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as InvoicesRouteImport } from './routes/invoices'
 import { Route as ClientsIndexRouteImport } from './routes/clients.index'
-import { Route as MasterProductsRouteImport } from './routes/master.products'
-import { Route as MasterPricingRouteImport } from './routes/master.pricing'
-import { Route as MasterCarriersRouteImport } from './routes/master.carriers'
-import { Route as MasterAdminRouteImport } from './routes/master.admin'
 import { Route as ClientsClientIdRouteImport } from './routes/clients.$clientId'
+import { Route as MasterAdminRouteImport } from './routes/master.admin'
+import { Route as MasterCarriersRouteImport } from './routes/master.carriers'
+import { Route as MasterPricingRouteImport } from './routes/master.pricing'
+import { Route as MasterProductsRouteImport } from './routes/master.products'
 import { Route as ClientsClientIdIndexRouteImport } from './routes/clients.$clientId.index'
 import { Route as ClientsClientIdConfigurationRouteImport } from './routes/clients.$clientId.configuration'
 
-const InvoicesRoute = InvoicesRouteImport.update({
-  id: '/invoices',
-  path: '/invoices',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -31,9 +31,9 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const InvoicesRoute = InvoicesRouteImport.update({
+  id: '/invoices',
+  path: '/invoices',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClientsIndexRoute = ClientsIndexRouteImport.update({
@@ -41,19 +41,9 @@ const ClientsIndexRoute = ClientsIndexRouteImport.update({
   path: '/clients/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MasterProductsRoute = MasterProductsRouteImport.update({
-  id: '/master/products',
-  path: '/master/products',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MasterPricingRoute = MasterPricingRouteImport.update({
-  id: '/master/pricing',
-  path: '/master/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MasterCarriersRoute = MasterCarriersRouteImport.update({
-  id: '/master/carriers',
-  path: '/master/carriers',
+const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
+  id: '/clients/$clientId',
+  path: '/clients/$clientId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MasterAdminRoute = MasterAdminRouteImport.update({
@@ -61,9 +51,19 @@ const MasterAdminRoute = MasterAdminRouteImport.update({
   path: '/master/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
-  id: '/clients/$clientId',
-  path: '/clients/$clientId',
+const MasterCarriersRoute = MasterCarriersRouteImport.update({
+  id: '/master/carriers',
+  path: '/master/carriers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterPricingRoute = MasterPricingRouteImport.update({
+  id: '/master/pricing',
+  path: '/master/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterProductsRoute = MasterProductsRouteImport.update({
+  id: '/master/products',
+  path: '/master/products',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClientsClientIdIndexRoute = ClientsClientIdIndexRouteImport.update({
@@ -172,11 +172,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/invoices': {
-      id: '/invoices'
-      path: '/invoices'
-      fullPath: '/invoices'
-      preLoaderRoute: typeof InvoicesRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -186,11 +186,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/invoices': {
+      id: '/invoices'
+      path: '/invoices'
+      fullPath: '/invoices'
+      preLoaderRoute: typeof InvoicesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/clients/': {
@@ -200,25 +200,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/master/products': {
-      id: '/master/products'
-      path: '/master/products'
-      fullPath: '/master/products'
-      preLoaderRoute: typeof MasterProductsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/master/pricing': {
-      id: '/master/pricing'
-      path: '/master/pricing'
-      fullPath: '/master/pricing'
-      preLoaderRoute: typeof MasterPricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/master/carriers': {
-      id: '/master/carriers'
-      path: '/master/carriers'
-      fullPath: '/master/carriers'
-      preLoaderRoute: typeof MasterCarriersRouteImport
+    '/clients/$clientId': {
+      id: '/clients/$clientId'
+      path: '/clients/$clientId'
+      fullPath: '/clients/$clientId'
+      preLoaderRoute: typeof ClientsClientIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/master/admin': {
@@ -228,11 +214,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MasterAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/clients/$clientId': {
-      id: '/clients/$clientId'
-      path: '/clients/$clientId'
-      fullPath: '/clients/$clientId'
-      preLoaderRoute: typeof ClientsClientIdRouteImport
+    '/master/carriers': {
+      id: '/master/carriers'
+      path: '/master/carriers'
+      fullPath: '/master/carriers'
+      preLoaderRoute: typeof MasterCarriersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master/pricing': {
+      id: '/master/pricing'
+      path: '/master/pricing'
+      fullPath: '/master/pricing'
+      preLoaderRoute: typeof MasterPricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master/products': {
+      id: '/master/products'
+      path: '/master/products'
+      fullPath: '/master/products'
+      preLoaderRoute: typeof MasterProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/clients/$clientId/': {
