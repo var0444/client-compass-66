@@ -108,11 +108,23 @@ export const billingArrangementsByClient: Record<string, BillingArrangement[]> =
   ],
 };
 
-const sampleCags: CagAssociation[] = [
+const westCoastCags: CagAssociation[] = [
   { id: "CAG-003", carrier: "FedEx", account: "—", group: "—", scopeLevel: "carrier", effectiveFrom: "Jan 01, 2024", effectiveTo: "Dec 31, 2025", status: "Active", pricingOverrides: [{ productName: "Last-Mile Delivery Pro", adjusted: "$4.20" }] },
   { id: "CAG-001", carrier: "FedEx", account: "ACC-77821", group: "—", scopeLevel: "account", effectiveFrom: "Jan 01, 2024", effectiveTo: "Dec 31, 2025", status: "Active", pricingOverrides: [{ productName: "Last-Mile Delivery Pro", adjusted: "$4.10" }] },
   { id: "CAG-004", carrier: "FedEx", account: "ACC-77821", group: "Domestic Ground", scopeLevel: "group", effectiveFrom: "Jan 01, 2024", effectiveTo: "Dec 31, 2024", status: "Active", pricingOverrides: [{ productName: "Last-Mile Delivery Pro", adjusted: "$4.05" }] },
+  { id: "CAG-005", carrier: "UPS", account: "—", group: "—", scopeLevel: "carrier", effectiveFrom: "Mar 15, 2024", effectiveTo: "Dec 31, 2025", status: "Active", pricingOverrides: [{ productName: "Real-time Tracking API", adjusted: "$0.69" }] },
+  { id: "CAG-006", carrier: "UPS", account: "ACC-43219", group: "—", scopeLevel: "account", effectiveFrom: "Mar 15, 2024", effectiveTo: "Dec 31, 2025", status: "Active", pricingOverrides: [{ productName: "Real-time Tracking API", adjusted: "$0.65" }] },
   { id: "CAG-002", carrier: "UPS", account: "ACC-43219", group: "International Air", scopeLevel: "group", effectiveFrom: "Mar 15, 2024", effectiveTo: "Dec 31, 2025", status: "Active", pricingOverrides: [{ productName: "Real-time Tracking API", adjusted: "$0.62" }] },
+];
+
+const texasCags: CagAssociation[] = [
+  { id: "CAG-007", carrier: "UPS", account: "—", group: "—", scopeLevel: "carrier", effectiveFrom: "Feb 01, 2024", effectiveTo: "Dec 31, 2024", status: "Active" },
+];
+
+const triStateCags: CagAssociation[] = [
+  { id: "CAG-008", carrier: "FedEx", account: "—", group: "—", scopeLevel: "carrier", effectiveFrom: "Apr 01, 2024", effectiveTo: "Dec 31, 2024", status: "Active", pricingOverrides: [{ productName: "Last-Mile Delivery Pro", adjusted: "$3.70" }] },
+  { id: "CAG-009", carrier: "FedEx", account: "ACC-55210", group: "—", scopeLevel: "account", effectiveFrom: "Apr 01, 2024", effectiveTo: "Dec 31, 2024", status: "Active", pricingOverrides: [{ productName: "Last-Mile Delivery Pro", adjusted: "$3.65" }] },
+  { id: "CAG-010", carrier: "FedEx", account: "ACC-55210", group: "Northeast Express", scopeLevel: "group", effectiveFrom: "Apr 01, 2024", effectiveTo: "Dec 31, 2024", status: "Active", pricingOverrides: [{ productName: "Last-Mile Delivery Pro", adjusted: "$3.60" }] },
 ];
 
 export const operationalUnitsByClient: Record<string, OperationalUnit[]> = {
@@ -132,7 +144,7 @@ export const operationalUnitsByClient: Record<string, OperationalUnit[]> = {
         { name: "Warehouse Management", model: "Monthly Seat", basePrice: "$120.00", adjusted: "$110.00" },
         { name: "Real-time Tracking API", model: "Per 1K Calls", basePrice: "$0.80", adjusted: "$0.72" },
       ],
-      cags: sampleCags,
+      cags: westCoastCags,
     },
     {
       id: "OU-8842",
@@ -148,7 +160,7 @@ export const operationalUnitsByClient: Record<string, OperationalUnit[]> = {
         { name: "Freight Core SaaS", model: "Monthly", basePrice: "$2,400.00", adjusted: "$2,400.00" },
         { name: "Custom Labeling Module", model: "Per Label", basePrice: "$0.05", adjusted: "$0.05" },
       ],
-      cags: [sampleCags[0]],
+      cags: texasCags,
     },
     {
       id: "OU-9902",
@@ -164,7 +176,7 @@ export const operationalUnitsByClient: Record<string, OperationalUnit[]> = {
         { name: "Last-Mile Delivery Pro", model: "Per Transaction", basePrice: "$4.50", adjusted: "$3.80" },
         { name: "Real-time Tracking API", model: "Per 1K Calls", basePrice: "$0.80", adjusted: "$0.55" },
       ],
-      cags: sampleCags,
+      cags: triStateCags,
     },
   ],
 };
