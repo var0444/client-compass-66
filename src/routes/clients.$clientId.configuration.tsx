@@ -29,7 +29,7 @@ export const Route = createFileRoute("/clients/$clientId/configuration")({
   component: ClientConfiguration,
   head: ({ loaderData }) => {
     const clientName = loaderData?.client?.name ?? "Client";
-    const description = `Manage billing arrangements, operational units, global pricing, and overrides for ${clientName}.`;
+    const description = `Manage billing arrangements, operational units, contract pricing, and scoped overrides for ${clientName}.`;
     return {
       meta: [
         { title: `${clientName} Configuration · Client360` },
@@ -515,7 +515,7 @@ function PricingProductDetail({ product, units, contracts }: { product: ProductP
           <SelectTrigger aria-label="Filter pricing scope" className="w-full sm:w-56"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All pricing scopes</SelectItem>
-            <SelectItem value="ou">Operational Units</SelectItem>
+            <SelectItem value="ou">OU</SelectItem>
             <SelectItem value="carrier">Carrier</SelectItem>
             <SelectItem value="account">Carrier + Account</SelectItem>
             <SelectItem value="group">Carrier + Account + Group</SelectItem>
