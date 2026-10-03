@@ -435,7 +435,7 @@ function PricingTab({ units, contracts }: { units: OperationalUnit[]; contracts:
 type PricingComparison = {
   id: string;
   scope: "ou" | "carrier" | "account" | "group";
-  label: string;
+  scopeValue: string;
   detail: string;
   contractPrice?: string;
   parentPrice?: string;
@@ -443,6 +443,10 @@ type PricingComparison = {
   source: string;
   override: boolean;
 };
+
+function cagLevel(cag: CagAssociation): "carrier" | "account" | "group" {
+  return cag.group && cag.group !== "—" ? "group" : cag.account && cag.account !== "—" ? "account" : "carrier";
+}
 
 function PricingProductDetail({ product, units, contracts }: { product: ProductPricingSummary; units: OperationalUnit[]; contracts: Contract[] }) {
   const [query, setQuery] = useState("");
@@ -457,29 +461,27 @@ function PricingProductDetail({ product, units, contracts }: { product: ProductP
     const ouOverride = pricesDiffer(contractPrice, rawOuPrice);
     const ouPrice = contractPrice ? (ouOverride ? rawOuPrice : contractPrice) : undefined;
     const unitRows: PricingComparison[] = [{
-      id: `${unit.id}-ou`, scope: "ou", label: unit.name, detail: `${unit.id} · ${unit.region}`,
+      id: `${unit.id}-ou`, scope: "ou", scopeValue: unit.name, detail: `${unit.id} · ${unit.region}`,
       contractPrice, parentPrice: contractPrice, appliedPrice: ouPrice,
       source: ouOverride ? "OU override" : "Active contract", override: ouOverride,
     }];
     const cagRows = unit.cags.map((cag): PricingComparison => {
-      const level = cag.scopeLevel ?? (cag.group && cag.group !== "—" ? "group" : cag.account && cag.account !== "—" ? "account" : "carrier");
-      const parentLevel = level === "group" ? "account" : level === "account" ? "carrier" : "ou";
-      const parentCag = level === "group"
-        ? unit.cags.find((candidate) => candidate.carrier === cag.carrier && candidate.account === cag.account && (candidate.scopeLevel ?? (candidate.group && candidate.group !== "—" ? "group" : candidate.account && candidate.account !== "—" ? "account" : "carrier")) === "account")
-        : level === "account"
-          ? unit.cags.find((candidate) => candidate.carrier === cag.carrier && (candidate.scopeLevel ?? (candidate.group && candidate.group !== "—" ? "group" : candidate.account && candidate.account !== "—" ? "account" : "carrier")) === "carrier")
-          : undefined;
-      const parentOverride = parentCag?.pricingOverrides?.find((item) => item.productName === product.name)?.adjusted;
-      const parentPrice = parentOverride ?? ouPrice;
+      const level = cagLevel(cag);
+      const ancestors = unit.cags.filter((candidate) => candidate.carrier === cag.carrier && (
+        (level === "group" && cagLevel(candidate) === "account" && candidate.account === cag.account) ||
+        (level !== "carrier" && cagLevel(candidate) === "carrier")
+      )).sort((a, b) => (cagLevel(a) === "account" ? -1 : 1) - (cagLevel(b) === "account" ? -1 : 1));
+      const pricedAncestor = ancestors.find((candidate) => candidate.pricingOverrides?.some((item) => item.productName === product.name));
+      const parentPrice = pricedAncestor?.pricingOverrides?.find((item) => item.productName === product.name)?.adjusted ?? ouPrice;
       const ownPrice = cag.pricingOverrides?.find((item) => item.productName === product.name)?.adjusted;
       const appliedPrice = contractPrice ? (ownPrice ?? parentPrice) : undefined;
       const override = pricesDiffer(parentPrice, ownPrice);
       const scopeName = level === "carrier" ? "Carrier" : level === "account" ? "Carrier + Account" : "Carrier + Account + Group";
-      const detail = [cag.carrier, cag.account !== "—" ? cag.account : undefined, cag.group !== "—" ? cag.group : undefined].filter(Boolean).join(" · ");
+      const scopeValue = [cag.carrier, level !== "carrier" ? cag.account : undefined, level === "group" ? cag.group : undefined].filter(Boolean).join(" / ");
       return {
-        id: `${unit.id}-${cag.id}`, scope: level, label: `${scopeName} · ${detail}`, detail: `${unit.name} (${unit.id}) · ${cag.id}`,
+        id: `${unit.id}-${cag.id}`, scope: level, scopeValue, detail: `${unit.name} (${unit.id}) · ${cag.id}`,
         contractPrice, parentPrice, appliedPrice,
-        source: override ? `${scopeName} override` : parentCag && parentOverride ? `Inherited from ${parentLevel === "account" ? "account" : "carrier"}` : "Inherited from OU",
+        source: override ? `${scopeName} override` : pricedAncestor ? `Inherited from ${cagLevel(pricedAncestor) === "account" ? "account" : "carrier"}` : "Inherited from OU",
         override,
       };
     });
@@ -488,7 +490,7 @@ function PricingProductDetail({ product, units, contracts }: { product: ProductP
 
   const filtered = comparisons.filter((item) => {
     const matchesScope = scope === "all" || item.scope === scope;
-    const matchesSearch = `${item.label} ${item.detail} ${item.source}`.toLowerCase().includes(query.toLowerCase());
+    const matchesSearch = `${item.scopeValue} ${item.detail} ${item.source}`.toLowerCase().includes(query.toLowerCase());
     return matchesScope && matchesSearch && (!overridesOnly || item.override);
   });
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -525,12 +527,13 @@ function PricingProductDetail({ product, units, contracts }: { product: ProductP
       </div>
       <div className="overflow-x-auto rounded-md border border-slate-200">
         <table className="w-full text-left text-xs">
-          <thead className="thead-brand"><tr><th className="th-brand px-3 py-2">Scope / peer</th><th className="th-brand px-3 py-2">Contract</th><th className="th-brand px-3 py-2">Inherited from parent</th><th className="th-brand px-3 py-2">Applicable price</th><th className="th-brand px-3 py-2">Vs. contract</th><th className="th-brand px-3 py-2">Price source</th></tr></thead>
+          <thead className="thead-brand"><tr><th className="th-brand px-3 py-2">Scope</th><th className="th-brand px-3 py-2">Scope Value</th><th className="th-brand px-3 py-2">Contract</th><th className="th-brand px-3 py-2">Inherited from parent</th><th className="th-brand px-3 py-2">Applicable price</th><th className="th-brand px-3 py-2">Vs. contract</th><th className="th-brand px-3 py-2">Price source</th></tr></thead>
           <tbody>
             {visibleRows.map((row) => {
               const delta = priceDelta(row.contractPrice, row.appliedPrice);
               return <tr key={row.id} className="border-t border-slate-100 align-top">
-                <td className="min-w-52 px-3 py-2"><div className="font-medium text-slate-800">{row.label}</div><div className="mt-0.5 text-[10px] text-slate-500">{row.detail}</div></td>
+                <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-800">{row.scope === "ou" ? "OU" : row.scope === "carrier" ? "Carrier" : row.scope === "account" ? "Carrier + Account" : "Carrier + Account + Group"}</td>
+                <td className="min-w-52 px-3 py-2"><div className="font-medium text-slate-800">{row.scopeValue}</div><div className="mt-0.5 text-[10px] text-slate-500">{row.detail}</div></td>
                 <td className="whitespace-nowrap px-3 py-2 text-slate-600">{row.contractPrice ?? <span className="text-slate-400">Not priced</span>}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-slate-600">{row.parentPrice ?? <span className="text-slate-400">Not priced</span>}</td>
                 <td className="whitespace-nowrap px-3 py-2"><span className={cn("font-semibold", row.override ? "text-brand-primary" : "text-slate-800")}>{row.appliedPrice ?? "Not priced"}</span></td>
@@ -538,7 +541,7 @@ function PricingProductDetail({ product, units, contracts }: { product: ProductP
                 <td className="whitespace-nowrap px-3 py-2 text-slate-500">{row.source}</td>
               </tr>;
             })}
-            {visibleRows.length === 0 && <tr><td colSpan={6} className="px-3 py-8 text-center text-slate-500">No pricing comparisons match these filters.</td></tr>}
+            {visibleRows.length === 0 && <tr><td colSpan={7} className="px-3 py-8 text-center text-slate-500">No pricing comparisons match these filters.</td></tr>}
           </tbody>
         </table>
       </div>
