@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ExpandedShell, FieldRow } from "@/components/ExpandedShell";
 import { AddEntityDialog, type FieldDef } from "@/components/AddEntityDialog";
+import { AssignCagDialog, initialUnassignedCags, type NewCagAssignment, type UnassignedCarrier } from "@/components/AssignCagDialog";
 import { cn } from "@/lib/utils";
 import {
   billingArrangementsByClient,
@@ -698,25 +699,37 @@ function CagsTab({ units }: { units: OperationalUnit[] }) {
     }),
   ], [editingId, draft]);
 
-  const fields: FieldDef[] = [
-    { type: "select", key: "ou", label: "Operational Unit", required: true, options: units.map((u) => ({ value: u.id, label: u.name })) },
-    { type: "select", key: "carrier", label: "Carrier", required: true, options: [
-      { value: "FedEx", label: "FedEx" }, { value: "UPS", label: "UPS" }, { value: "DHL", label: "DHL Express" }, { value: "USPS", label: "USPS" },
-    ]},
-    { type: "text", key: "account", label: "Account #", placeholder: "ACC-XXXXX" },
-    { type: "text", key: "group", label: "Group", placeholder: "Domestic Ground" },
-    { type: "date", key: "from", label: "Effective From", required: true },
-    { type: "date", key: "to", label: "Effective To" },
-    { type: "checkbox", key: "primary", label: "Mark as primary carrier for this OU", full: true },
-    { type: "switch", key: "active", label: "Active", defaultValue: true, full: true },
-  ];
+  const [inventory, setInventory] = useState<UnassignedCarrier[]>(initialUnassignedCags);
+  const assign = (items: NewCagAssignment[]) => {
+    const unit = units.find((u) => u.id === items[0]?.ouId);
+    if (!unit) return;
+    const stamp = Date.now();
+    setRows((prev) => [
+      ...items.map((it, i) => ({
+        id: `${unit.id}:CAG-N${stamp}-${i}`, ouId: unit.id, ouName: unit.name,
+        carrier: it.carrier, account: it.account, group: it.group,
+        scopeLevel: (it.group !== "—" ? "group" : it.account !== "—" ? "account" : "carrier") as CagRow["scopeLevel"],
+        effectiveFrom: it.effectiveFrom, effectiveTo: it.effectiveTo,
+        status: (it.active ? "Active" : "Inactive") as CagRow["status"],
+      })),
+      ...prev,
+    ]);
+    // Remove assigned groups from the unassigned pool
+    const covered = (c: string, a: string, g: string) => items.some((it) =>
+      it.carrier === c && (it.account === "—" || it.account === a) && (it.group === "—" || it.group === g));
+    setInventory((prev) => prev
+      .map((c) => ({ ...c, accounts: c.accounts
+        .map((a) => ({ ...a, groups: a.groups.filter((g) => !covered(c.carrier, a.account, g)) }))
+        .filter((a) => a.groups.length) }))
+      .filter((c) => c.accounts.length));
+  };
 
   return (
     <div className="space-y-4">
       <SectionHeader
         title="CAG Associations"
         desc="Carrier + Account + Group mappings across operational units, scoped by effective date."
-        action={<Button size="sm" onClick={() => setOpenAdd(true)} className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ Add CAG</Button>}
+        action={<Button size="sm" onClick={() => setOpenAdd(true)} className="bg-brand-primary text-white hover:bg-brand-primary-hover">+ Assign CAGs</Button>}
       />
       {selected.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-brand-primary/25 bg-brand-primary/[0.04] px-4 py-2.5">
@@ -742,53 +755,12 @@ function CagsTab({ units }: { units: OperationalUnit[] }) {
         emptyMessage="No CAG associations yet."
         selectable
         onSelectionChange={setSelected}
-        renderExpanded={(c: CagRow) => (
-          <ExpandedShell
-            sections={[
-              {
-                id: "id",
-                title: "Identification",
-                view: (
-                  <div>
-                    <FieldRow label="Operational Unit">{c.ouName} <span className="font-mono text-[11px] text-slate-400">({c.ouId})</span></FieldRow>
-                    <FieldRow label="Carrier">{c.carrier}</FieldRow>
-                    <FieldRow label="Account"><span className="font-mono text-xs">{c.account}</span></FieldRow>
-                    <FieldRow label="Group">{c.group}</FieldRow>
-                  </div>
-                ),
-                edit: (
-                  <div className="grid grid-cols-2 gap-3">
-                    <FieldLabel label="Carrier"><Input defaultValue={c.carrier} /></FieldLabel>
-                    <FieldLabel label="Account"><Input defaultValue={c.account} /></FieldLabel>
-                    <FieldLabel label="Group"><Input defaultValue={c.group} /></FieldLabel>
-                  </div>
-                ),
-              },
-              {
-                id: "scope",
-                title: "Effective scope",
-                view: (
-                  <div>
-                    <FieldRow label="From">{c.effectiveFrom}</FieldRow>
-                    <FieldRow label="To">{c.effectiveTo}</FieldRow>
-                    <FieldRow label="Status"><StatusChip tone={statusToTone(c.status)}>{c.status}</StatusChip></FieldRow>
-                  </div>
-                ),
-                edit: (
-                  <div className="grid grid-cols-2 gap-3">
-                    <FieldLabel label="From"><Input type="date" /></FieldLabel>
-                    <FieldLabel label="To"><Input type="date" /></FieldLabel>
-                  </div>
-                ),
-              },
-            ]}
-          />
-        )}
       />
-      <AddEntityDialog
+      <AssignCagDialog
         open={openAdd} onOpenChange={setOpenAdd}
-        title="Add CAG Association" description="Map a Carrier · Account · Group to an operational unit."
-        fields={fields} submitLabel="Create CAG"
+        units={units.map((u) => ({ id: u.id, name: u.name }))}
+        inventory={inventory}
+        onAssign={assign}
       />
       <Dialog open={openDates} onOpenChange={setOpenDates}>
         <DialogContent className="sm:max-w-md">
