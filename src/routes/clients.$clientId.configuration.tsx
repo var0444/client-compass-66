@@ -760,6 +760,7 @@ function CagsTab({ units }: { units: OperationalUnit[] }) {
         open={openAdd} onOpenChange={setOpenAdd}
         units={units.map((u) => ({ id: u.id, name: u.name }))}
         inventory={inventory}
+        assignedInventory={assignedInventory}
         onAssign={assign}
       />
       <Dialog open={openDates} onOpenChange={setOpenDates}>

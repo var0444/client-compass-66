@@ -243,6 +243,7 @@ export function AssignCagDialog({ open, onOpenChange, units, inventory, assigned
                                   <Checkbox checked={on} onCheckedChange={(v) => toggle([k], v === true)} />
                                   <Layers className="size-3.5 text-slate-400" />
                                   <span className={cn("text-slate-700", carrierPartial && "text-slate-400 line-through")}>{g}</span>
+                                  {assignedKeys.has(k) && <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">Assigned</span>}
                                   {carrierPartial && <span className="ml-auto rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-600">Excluded</span>}
                                 </label>
                               );
