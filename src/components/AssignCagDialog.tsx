@@ -73,20 +73,34 @@ function mergeInventory(a: UnassignedCarrier[], b: UnassignedCarrier[]): Unassig
 
 const gKey = (c: string, a: string, g: string) => `${c}|${a}|${g}`;
 
-export function AssignCagDialog({ open, onOpenChange, units, inventory, onAssign }: Props) {
+export function AssignCagDialog({ open, onOpenChange, units, inventory, assignedInventory = [], onAssign }: Props) {
   const [ouId, setOuId] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [active, setActive] = useState(true);
   const [query, setQuery] = useState("");
+  const [scope, setScope] = useState<ScopeFilter>("unassigned");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (open) {
-      setOuId(""); setFrom(""); setTo(""); setActive(true); setQuery(""); setPicked(new Set()); setExpanded({});
+      setOuId(""); setFrom(""); setTo(""); setActive(true); setQuery(""); setScope("unassigned"); setPicked(new Set()); setExpanded({});
     }
   }, [open]);
+
+  const assignedKeys = useMemo(() => {
+    const s = new Set<string>();
+    for (const c of assignedInventory)
+      for (const a of c.accounts) for (const g of a.groups) s.add(gKey(c.carrier, a.account, g));
+    return s;
+  }, [assignedInventory]);
+
+  const source = useMemo(() => {
+    if (scope === "unassigned") return inventory;
+    if (scope === "assigned") return assignedInventory;
+    return mergeInventory(inventory, assignedInventory);
+  }, [scope, inventory, assignedInventory]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
