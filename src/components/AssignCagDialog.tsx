@@ -47,7 +47,28 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   units: { id: string; name: string }[];
   inventory: UnassignedCarrier[];
+  /** CAGs already linked to an OU — pick these to add new effective dates. */
+  assignedInventory?: UnassignedCarrier[];
   onAssign: (rows: NewCagAssignment[]) => void;
+}
+
+type ScopeFilter = "unassigned" | "assigned" | "all";
+
+/** Merge two inventories, de-duplicating groups per carrier/account. */
+function mergeInventory(a: UnassignedCarrier[], b: UnassignedCarrier[]): UnassignedCarrier[] {
+  const map = new Map<string, Map<string, Set<string>>>();
+  for (const src of [a, b])
+    for (const c of src)
+      for (const acct of c.accounts) {
+        if (!map.has(c.carrier)) map.set(c.carrier, new Map());
+        const am = map.get(c.carrier)!;
+        if (!am.has(acct.account)) am.set(acct.account, new Set());
+        acct.groups.forEach((g) => am.get(acct.account)!.add(g));
+      }
+  return [...map.entries()].map(([carrier, am]) => ({
+    carrier,
+    accounts: [...am.entries()].map(([account, gs]) => ({ account, groups: [...gs] })),
+  }));
 }
 
 const gKey = (c: string, a: string, g: string) => `${c}|${a}|${g}`;
