@@ -104,8 +104,8 @@ export function AssignCagDialog({ open, onOpenChange, units, inventory, assigned
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return inventory;
-    return inventory
+    if (!q) return source;
+    return source
       .map((c) => {
         if (c.carrier.toLowerCase().includes(q)) return c;
         const accounts = c.accounts
@@ -114,7 +114,7 @@ export function AssignCagDialog({ open, onOpenChange, units, inventory, assigned
         return { ...c, accounts };
       })
       .filter((c) => c.accounts.length > 0);
-  }, [inventory, query]);
+  }, [source, query]);
 
   const allGroupKeys = (c: UnassignedCarrier, a?: string) =>
     c.accounts.filter((x) => !a || x.account === a).flatMap((x) => x.groups.map((g) => gKey(c.carrier, x.account, g)));
@@ -134,7 +134,7 @@ export function AssignCagDialog({ open, onOpenChange, units, inventory, assigned
   /** Collapse selections to the most general level that is fully covered. */
   const plan = useMemo(() => {
     const rules: { carrier: string; account: string; group: string; label: string; excluded: string[] }[] = [];
-    for (const c of inventory) {
+    for (const c of source) {
       const keys = allGroupKeys(c);
       const sel = keys.filter((k) => picked.has(k));
       if (sel.length === 0) continue;
@@ -157,17 +157,17 @@ export function AssignCagDialog({ open, onOpenChange, units, inventory, assigned
       if (rules.length) rules[rules.length - 1].excluded = excluded;
     }
     return rules;
-  }, [picked, inventory]);
+  }, [picked, source]);
 
   const excludedByCarrier = useMemo(() => {
     const m: Record<string, string[]> = {};
-    for (const c of inventory) {
+    for (const c of source) {
       const keys = allGroupKeys(c);
       const sel = keys.filter((k) => picked.has(k));
       if (sel.length > 0 && sel.length < keys.length) m[c.carrier] = keys.filter((k) => !picked.has(k)).map((k) => k.split("|").slice(1).join(" · "));
     }
     return m;
-  }, [picked, inventory]);
+  }, [picked, source]);
 
   const canSubmit = ouId && from && plan.length > 0;
 
@@ -180,23 +180,33 @@ export function AssignCagDialog({ open, onOpenChange, units, inventory, assigned
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Assign unassigned CAGs</DialogTitle>
+          <DialogTitle>Assign CAGs</DialogTitle>
           <DialogDescription>
-            Pick carriers, accounts or groups that aren't linked to any operational unit yet. Select a whole carrier to include everything under it, then untick any groups you want to exclude.
+            Pick carriers, accounts or groups at any level. Use the filter to work with unassigned CAGs, or switch to assigned ones to add new effective dates. Select a whole carrier to include everything under it, then untick any groups you want to exclude.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-5 md:grid-cols-[1.4fr_1fr]">
           {/* Picker */}
           <div className="space-y-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 size-4 text-slate-400" />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search carrier, account or group…" className="pl-8" />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 size-4 text-slate-400" />
+                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search carrier, account or group…" className="pl-8" />
+              </div>
+              <Select value={scope} onValueChange={(v) => { setScope(v as ScopeFilter); setPicked(new Set()); }}>
+                <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  <SelectItem value="assigned">Assigned</SelectItem>
+                  <SelectItem value="all">All CAGs</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="max-h-[420px] overflow-y-auto rounded-lg border border-slate-200">
               {filtered.length === 0 && <p className="p-6 text-center text-sm text-slate-500">No unassigned CAGs match.</p>}
               {filtered.map((c) => {
-                const fullC = inventory.find((x) => x.carrier === c.carrier)!;
+                const fullC = source.find((x) => x.carrier === c.carrier)!;
                 const cKeys = allGroupKeys(fullC);
                 const cOpen = expanded[c.carrier] ?? !!query;
                 const total = cKeys.length;
