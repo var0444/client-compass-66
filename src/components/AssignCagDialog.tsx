@@ -47,30 +47,65 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   units: { id: string; name: string }[];
   inventory: UnassignedCarrier[];
+  /** CAGs already linked to an OU — pick these to add new effective dates. */
+  assignedInventory?: UnassignedCarrier[];
   onAssign: (rows: NewCagAssignment[]) => void;
+}
+
+type ScopeFilter = "unassigned" | "assigned" | "all";
+
+/** Merge two inventories, de-duplicating groups per carrier/account. */
+function mergeInventory(a: UnassignedCarrier[], b: UnassignedCarrier[]): UnassignedCarrier[] {
+  const map = new Map<string, Map<string, Set<string>>>();
+  for (const src of [a, b])
+    for (const c of src)
+      for (const acct of c.accounts) {
+        if (!map.has(c.carrier)) map.set(c.carrier, new Map());
+        const am = map.get(c.carrier)!;
+        if (!am.has(acct.account)) am.set(acct.account, new Set());
+        acct.groups.forEach((g) => am.get(acct.account)!.add(g));
+      }
+  return [...map.entries()].map(([carrier, am]) => ({
+    carrier,
+    accounts: [...am.entries()].map(([account, gs]) => ({ account, groups: [...gs] })),
+  }));
 }
 
 const gKey = (c: string, a: string, g: string) => `${c}|${a}|${g}`;
 
-export function AssignCagDialog({ open, onOpenChange, units, inventory, onAssign }: Props) {
+export function AssignCagDialog({ open, onOpenChange, units, inventory, assignedInventory = [], onAssign }: Props) {
   const [ouId, setOuId] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [active, setActive] = useState(true);
   const [query, setQuery] = useState("");
+  const [scope, setScope] = useState<ScopeFilter>("unassigned");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (open) {
-      setOuId(""); setFrom(""); setTo(""); setActive(true); setQuery(""); setPicked(new Set()); setExpanded({});
+      setOuId(""); setFrom(""); setTo(""); setActive(true); setQuery(""); setScope("unassigned"); setPicked(new Set()); setExpanded({});
     }
   }, [open]);
 
+  const assignedKeys = useMemo(() => {
+    const s = new Set<string>();
+    for (const c of assignedInventory)
+      for (const a of c.accounts) for (const g of a.groups) s.add(gKey(c.carrier, a.account, g));
+    return s;
+  }, [assignedInventory]);
+
+  const source = useMemo(() => {
+    if (scope === "unassigned") return inventory;
+    if (scope === "assigned") return assignedInventory;
+    return mergeInventory(inventory, assignedInventory);
+  }, [scope, inventory, assignedInventory]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return inventory;
-    return inventory
+    if (!q) return source;
+    return source
       .map((c) => {
         if (c.carrier.toLowerCase().includes(q)) return c;
         const accounts = c.accounts
@@ -79,7 +114,7 @@ export function AssignCagDialog({ open, onOpenChange, units, inventory, onAssign
         return { ...c, accounts };
       })
       .filter((c) => c.accounts.length > 0);
-  }, [inventory, query]);
+  }, [source, query]);
 
   const allGroupKeys = (c: UnassignedCarrier, a?: string) =>
     c.accounts.filter((x) => !a || x.account === a).flatMap((x) => x.groups.map((g) => gKey(c.carrier, x.account, g)));
@@ -99,7 +134,7 @@ export function AssignCagDialog({ open, onOpenChange, units, inventory, onAssign
   /** Collapse selections to the most general level that is fully covered. */
   const plan = useMemo(() => {
     const rules: { carrier: string; account: string; group: string; label: string; excluded: string[] }[] = [];
-    for (const c of inventory) {
+    for (const c of source) {
       const keys = allGroupKeys(c);
       const sel = keys.filter((k) => picked.has(k));
       if (sel.length === 0) continue;
@@ -122,17 +157,17 @@ export function AssignCagDialog({ open, onOpenChange, units, inventory, onAssign
       if (rules.length) rules[rules.length - 1].excluded = excluded;
     }
     return rules;
-  }, [picked, inventory]);
+  }, [picked, source]);
 
   const excludedByCarrier = useMemo(() => {
     const m: Record<string, string[]> = {};
-    for (const c of inventory) {
+    for (const c of source) {
       const keys = allGroupKeys(c);
       const sel = keys.filter((k) => picked.has(k));
       if (sel.length > 0 && sel.length < keys.length) m[c.carrier] = keys.filter((k) => !picked.has(k)).map((k) => k.split("|").slice(1).join(" · "));
     }
     return m;
-  }, [picked, inventory]);
+  }, [picked, source]);
 
   const canSubmit = ouId && from && plan.length > 0;
 
@@ -145,23 +180,33 @@ export function AssignCagDialog({ open, onOpenChange, units, inventory, onAssign
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Assign unassigned CAGs</DialogTitle>
+          <DialogTitle>Assign CAGs</DialogTitle>
           <DialogDescription>
-            Pick carriers, accounts or groups that aren't linked to any operational unit yet. Select a whole carrier to include everything under it, then untick any groups you want to exclude.
+            Pick carriers, accounts or groups at any level. Use the filter to work with unassigned CAGs, or switch to assigned ones to add new effective dates. Select a whole carrier to include everything under it, then untick any groups you want to exclude.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-5 md:grid-cols-[1.4fr_1fr]">
           {/* Picker */}
           <div className="space-y-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 size-4 text-slate-400" />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search carrier, account or group…" className="pl-8" />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 size-4 text-slate-400" />
+                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search carrier, account or group…" className="pl-8" />
+              </div>
+              <Select value={scope} onValueChange={(v) => { setScope(v as ScopeFilter); setPicked(new Set()); }}>
+                <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  <SelectItem value="assigned">Assigned</SelectItem>
+                  <SelectItem value="all">All CAGs</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="max-h-[420px] overflow-y-auto rounded-lg border border-slate-200">
               {filtered.length === 0 && <p className="p-6 text-center text-sm text-slate-500">No unassigned CAGs match.</p>}
               {filtered.map((c) => {
-                const fullC = inventory.find((x) => x.carrier === c.carrier)!;
+                const fullC = source.find((x) => x.carrier === c.carrier)!;
                 const cKeys = allGroupKeys(fullC);
                 const cOpen = expanded[c.carrier] ?? !!query;
                 const total = cKeys.length;
@@ -198,6 +243,7 @@ export function AssignCagDialog({ open, onOpenChange, units, inventory, onAssign
                                   <Checkbox checked={on} onCheckedChange={(v) => toggle([k], v === true)} />
                                   <Layers className="size-3.5 text-slate-400" />
                                   <span className={cn("text-slate-700", carrierPartial && "text-slate-400 line-through")}>{g}</span>
+                                  {assignedKeys.has(k) && <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">Assigned</span>}
                                   {carrierPartial && <span className="ml-auto rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-600">Excluded</span>}
                                 </label>
                               );
