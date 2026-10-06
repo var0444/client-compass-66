@@ -700,6 +700,22 @@ function CagsTab({ units }: { units: OperationalUnit[] }) {
   ], [editingId, draft]);
 
   const [inventory, setInventory] = useState<UnassignedCarrier[]>(initialUnassignedCags);
+  // CAGs already linked to OUs, grouped carrier → account → group, so the
+  // assign dialog can offer them for adding new effective dates.
+  const assignedInventory = useMemo<UnassignedCarrier[]>(() => {
+    const map = new Map<string, Map<string, Set<string>>>();
+    for (const r of rows) {
+      if (r.account === "—" || r.group === "—") continue;
+      if (!map.has(r.carrier)) map.set(r.carrier, new Map());
+      const am = map.get(r.carrier)!;
+      if (!am.has(r.account)) am.set(r.account, new Set());
+      am.get(r.account)!.add(r.group);
+    }
+    return [...map.entries()].map(([carrier, am]) => ({
+      carrier,
+      accounts: [...am.entries()].map(([account, gs]) => ({ account, groups: [...gs] })),
+    }));
+  }, [rows]);
   const assign = (items: NewCagAssignment[]) => {
     const unit = units.find((u) => u.id === items[0]?.ouId);
     if (!unit) return;
